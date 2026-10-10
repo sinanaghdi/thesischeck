@@ -119,11 +119,20 @@ class RequestBodyLimitMiddleware:
 
     protected_paths = frozenset({"/api/v1/inspect", "/api/v1/report"})
 
-    def __init__(self, app: ASGIApp, *, max_body_bytes: int) -> None:
+    def __init__(
+        self,
+        app: ASGIApp,
+        *,
+        max_body_bytes: int,
+        protected_paths: frozenset[str] | set[str] | None = None,
+    ) -> None:
         if max_body_bytes < 1:
             raise ValueError("max_body_bytes must be positive")
         self.app = app
         self.max_body_bytes = max_body_bytes
+        self.protected_paths = (
+            frozenset(protected_paths) if protected_paths is not None else type(self).protected_paths
+        )
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope.get("type") != "http":

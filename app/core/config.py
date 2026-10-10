@@ -1,6 +1,7 @@
 """Environment-backed configuration. Secrets must be supplied at deployment time."""
 
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -20,6 +21,10 @@ class Settings(BaseSettings):
     parser_worker_cpu_seconds: int = Field(default=25, ge=1, le=120)
     parser_worker_memory_mb: int = Field(default=1024, ge=256, le=4096)
     parser_worker_concurrency: int = Field(default=2, ge=1, le=16)
+    parser_backend: Literal["subprocess", "service"] = "subprocess"
+    parser_service_url: str | None = None
+    parser_service_token: str | None = None
+    parser_service_timeout_seconds: int = Field(default=45, ge=1, le=240)
     file_retention_days: int = Field(default=7, ge=1, le=365)
     llm_mode: str = "off"
     llm_base_url: str | None = None

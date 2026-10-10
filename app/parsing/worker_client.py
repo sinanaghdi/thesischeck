@@ -126,3 +126,112 @@ def parse_document_in_worker(
         raise ParserWorkerFailure("Parser subprocess failed while processing the document.")
     finally:
         slots.release()
+
+
+
+def parse_document_via_service(
+    filename: str | None,
+    content: bytes,
+    *,
+    max_size_bytes: int,
+    timeout_seconds: int,
+    service_url: str | None,
+    service_token: str | None,
+) -> NormalizedDocument:
+    """Send a document to a configured private parser service and validate its response."""
+    import base64
+    import socket
+    import urllib.error
+    import urllib.parse
+    import urllib.request
+
+    if not service_url or not service_token:
+        raise ParserWorkerFailure("Parser service is not configured.")
+
+    try:
+        parsed_url = urllib.parse.urlsplit(service_url)
+    except ValueError:
+        raise ParserWorkerFailure("Parser service URL is invalid.") from None
+    if (
+        parsed_url.scheme not in {"http", "https"}
+        or not parsed_url.hostname
+        or parsed_url.username
+        or parsed_url.password
+        or parsed_url.path not in {"", "/"}
+        or parsed_url.query
+        or parsed_url.fragment
+    ):
+        raise ParserWorkerFailure("Parser service URL is invalid.")
+
+    if len(content) > max_size_bytes:
+        max_mb = max_size_bytes // (1024 * 1024)
+        raise DocumentValidationError(
+            "file_too_large", f"حجم فایل نباید بیشتر از {max_mb} مگابایت باشد."
+        )
+
+    safe_filename = safe_display_filename(filename)
+    encoded_filename = base64.urlsafe_b64encode(safe_filename.encode("utf-8")).decode("ascii")
+    request = urllib.request.Request(
+        f"{service_url.rstrip('/')}/internal/parse",
+        data=content,
+        headers={
+            "Content-Type": "application/octet-stream",
+            "X-Parser-Token": service_token,
+            "X-Document-Filename-B64": encoded_filename,
+        },
+        method="POST",
+    )
+
+    try:
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        with opener.open(request, timeout=timeout_seconds) as response:
+            status_code = response.status
+            raw_response = response.read(_MAX_WORKER_RESPONSE_BYTES + 1)
+    except urllib.error.HTTPError as exc:
+        status_code = exc.code
+        try:
+            raw_response = exc.read(64 * 1024 + 1)
+        finally:
+            exc.close()
+    except (TimeoutError, socket.timeout):
+        raise ParserWorkerTimeout("Parser service deadline exceeded.") from None
+    except urllib.error.URLError as exc:
+        if isinstance(exc.reason, (TimeoutError, socket.timeout)):
+            raise ParserWorkerTimeout("Parser service deadline exceeded.") from None
+        raise ParserWorkerFailure("Parser service could not be reached.") from None
+    except OSError:
+        raise ParserWorkerFailure("Parser service could not be reached.") from None
+
+    if len(raw_response) > _MAX_WORKER_RESPONSE_BYTES:
+        raise ParserWorkerFailure("Parser service response exceeded the allowed size.")
+
+    try:
+        payload: dict[str, Any] = json.loads(raw_response.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        raise ParserWorkerFailure("Parser service returned invalid JSON.") from None
+
+    if status_code == 200 and payload.get("ok") is True:
+        try:
+            return NormalizedDocument.model_validate(payload["document"])
+        except (KeyError, TypeError, ValueError):
+            raise ParserWorkerFailure("Parser service returned an invalid document.") from None
+
+    error_detail = payload.get("detail")
+    error_payload = error_detail if isinstance(error_detail, dict) else payload
+    code = error_payload.get("code")
+    message = error_payload.get("message")
+    safe_message = (
+        message if isinstance(message, str) and message else "ساختار فایل قابل پردازش نیست."
+    )
+    if status_code in {400, 413}:
+        validation_code = code if isinstance(code, str) else "invalid_document"
+        if status_code == 413 or validation_code == "request_body_too_large":
+            validation_code = "file_too_large"
+        raise DocumentValidationError(validation_code, safe_message)
+    if status_code == 422:
+        raise DocumentParseError(safe_message)
+    if status_code == 503 and code == "parser_worker_busy":
+        raise ParserWorkerBusy("No parser worker slot is available.")
+    if status_code == 504 or code == "parser_timeout":
+        raise ParserWorkerTimeout("Parser service deadline exceeded.")
+    raise ParserWorkerFailure("Parser service failed to process the document.")

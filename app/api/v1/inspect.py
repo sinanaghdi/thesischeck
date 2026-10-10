@@ -19,6 +19,7 @@ from app.parsing.worker_client import (
     ParserWorkerFailure,
     ParserWorkerTimeout,
     parse_document_in_worker,
+    parse_document_via_service,
 )
 from app.reports.render_html import render_html_report
 from app.reports.scoring import HealthReport, build_health_report
@@ -53,15 +54,25 @@ def _process_document(
     max_size_bytes: int,
 ) -> tuple[NormalizedDocument, HealthReport]:
     settings = get_settings()
-    document = parse_document_in_worker(
-        filename,
-        content,
-        max_size_bytes=max_size_bytes,
-        timeout_seconds=settings.parser_worker_timeout_seconds,
-        cpu_seconds=settings.parser_worker_cpu_seconds,
-        memory_mb=settings.parser_worker_memory_mb,
-        concurrency=settings.parser_worker_concurrency,
-    )
+    if settings.parser_backend == "service":
+        document = parse_document_via_service(
+            filename,
+            content,
+            max_size_bytes=max_size_bytes,
+            timeout_seconds=settings.parser_service_timeout_seconds,
+            service_url=settings.parser_service_url,
+            service_token=settings.parser_service_token,
+        )
+    else:
+        document = parse_document_in_worker(
+            filename,
+            content,
+            max_size_bytes=max_size_bytes,
+            timeout_seconds=settings.parser_worker_timeout_seconds,
+            cpu_seconds=settings.parser_worker_cpu_seconds,
+            memory_mb=settings.parser_worker_memory_mb,
+            concurrency=settings.parser_worker_concurrency,
+        )
     ruleset = load_ruleset(RULESET_PATH)
     checks = run_rules(document, ruleset)
     return document, build_health_report(document, checks, ruleset)
