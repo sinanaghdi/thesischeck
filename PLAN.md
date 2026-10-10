@@ -14,7 +14,8 @@
 - [x] Phase 7 (slice 2): supervised parser subprocess with wall-clock timeout, bounded worker slots, minimal environment and platform-dependent POSIX resource limits.
 - [x] Phase 7 (slice 3): streaming raw request-body size guard before multipart parsing, including requests without a trustworthy Content-Length.
 - [x] Phase 7 (slice 4): deterministic adversarial upload regressions, malformed/conflicting Content-Length tests, parser-worker environment allowlist tests, and an opt-in 100-logical-page performance benchmark harness.
-- [ ] Phase 7 follow-up: run benchmark on the intended deployment host, add property-based fuzzing if the dependency budget permits, isolated container/worker identity, trusted-edge body limits and shared rate limiting, retention/deletion workflows, and production deployment acceptance.
+- [x] Phase 7 (slice 5): harden the local Docker runtime with loopback-only port publishing, read-only root filesystem, bounded temporary storage/resources, no-new-privileges, dropped capabilities and Uvicorn concurrency limits.
+- [ ] Phase 7 follow-up: run benchmark on the intended deployment host, add property-based fuzzing if the dependency budget permits, move parsing to a separately constrained worker/container identity with no network access, add trusted-edge body limits and shared rate limiting, define retention/deletion behavior if persistence is introduced, and complete production acceptance tests.
 
 ## Architecture decisions
 
@@ -49,3 +50,10 @@
 - Adversarial tests are deterministic regression tests, not a substitute for continuous fuzzing or third-party security review.
 - The large-document benchmark runs on demand and is intentionally excluded from CI due to noisy shared-runner timing. Its JSON output should be retained with deployment/benchmark notes when tested on the intended host.
 - No public-production readiness is claimed until the parser has a separate constrained OS/container identity and the remaining trusted-edge, retention, and load-test requirements are addressed.
+
+
+## Phase 7 slice 5 container boundary
+
+- The Compose profile is designed for local/demo use and minimizes writable paths and process/resource exposure.
+- The parser child still runs with the web container's unprivileged OS identity and retains container network access; this is not a separate sandbox.
+- Port publishing defaults to loopback. Do not change it to a public interface until the separately isolated parser and trusted-edge controls exist.
