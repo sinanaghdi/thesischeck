@@ -6,8 +6,8 @@
 - [x] Phase 1: safe upload validation, DOCX/PDF parsing, normalized document model, parser diagnostics and inspection-summary API.
 - [x] Phase 2: initial deterministic rule registry, reference/citation heuristics, editable terminology glossary, abstract checks, figure/table cross-reference checks, heading hierarchy hints and report findings in the UI.
 - [x] Phase 3: coverage-aware provisional scoring, category breakdowns, executive summary, prioritized findings, downloadable HTML/JSON and optional Chromium PDF export.
-- [ ] Phase 3 follow-up: bundle a licensed Persian-capable font and visually test PDF on Windows/Linux; add export visual-regression tests.
-- [ ] Phase 4: professor-demo report polish, issue filters, report comparison and parsing-coverage UX.
+- [x] Phase 4 (slice 1): in-app finding filters and explicit parsing-coverage/limitations panel for the professor demo.
+- [ ] Phase 4 follow-up: full English UI toggle, report-to-report comparison and visual QA of generated PDFs on target machines.
 - [ ] Phase 5: optional LLM provider, chapter chunking, strict structured output, evidence validation and cost estimates.
 - [ ] Phase 6: accounts, authorization, plan gates, admin rules/glossary management and mock payments.
 - [ ] Phase 7: isolated parsing worker, retention/deletion workflows, rate limiting, fuzz/security tests, 100-page performance benchmark and production deployment acceptance.
@@ -29,5 +29,11 @@
 - Overall score is the weighted mean of assessed categories; weighted coverage and unavailable categories are shown.
 - The score is a draft-review signal, not an academic grade, plagiarism result or proof of university compliance.
 - HTML is self-contained, RTL and escaped against injected thesis text. JSON is machine-readable.
-- PDF export requires the optional Playwright package and installed Chromium. The renderer uses locally installed fonts; no font binary is bundled in this phase, so verify PDF shaping on the target environment.
+- PDF export requires optional Playwright and installed Chromium. No font binary is bundled yet, so verify shaping on the target environment.
 - The example Mazandaran ruleset remains unverified; official formatting compliance cannot be claimed.
+
+## Phase 4 demo UX
+
+- In-app filters support severity, category, free-text search, and one-click reset.
+- Parsing coverage and parser limitations remain visually distinct from quality findings.
+- Findings continue to show their evidence, category, confidence hint and source location; filtering does not modify the source document.

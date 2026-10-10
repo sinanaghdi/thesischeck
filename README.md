@@ -2,21 +2,22 @@
 
 ThesisCheck is a draft-review and format-control assistant for graduate theses. It helps identify potential formatting, citation, terminology, abstract and structure issues before supervisor review. It does not generate thesis sections for submission, fabricate references, or silently rewrite source text.
 
-> **Current status: Phase 3 — scoring and report exports.** The app accepts DOCX/PDF for in-memory inspection, runs deterministic offline checks, produces a coverage-aware provisional score, and exports machine-readable JSON and self-contained RTL HTML. PDF export uses optional Playwright/Chromium.
+> **Current status: Phase 4 — professor-demo UX refinements.** The app accepts DOCX/PDF for in-memory inspection, runs deterministic offline checks, produces a coverage-aware provisional score, and exports JSON and self-contained RTL HTML. PDF export uses optional Playwright/Chromium.
 
 ## Implemented
 
 - Persian RTL upload-and-inspection interface.
-- FastAPI POST endpoint at /api/v1/inspect and POST /api/v1/report?format=json|html|pdf, plus /health.
+- FastAPI POST endpoint at /api/v1/inspect, POST /api/v1/report?format=json|html|pdf, and /health.
 - In-memory upload validation and DOCX/PDF extraction. No upload is written to permanent storage or sent to an LLM.
 - DOCX headings, body paragraph/table order, selected run/font/RTL properties, section setup and parser diagnostics.
 - Best-effort PDF text extraction with page locations and explicit warnings when layout/style checks are unavailable.
 - Deterministic checker registry with localized findings, source evidence, severity, confidence and per-rule statuses.
 - Offline citation/reference checks, editable glossary-based terminology checks, abstract structure checks, figure/table cross-reference checks and heading-hierarchy hints.
-- Explainable provisional score with visible penalties, configured/assessed category weights, normalized weights and coverage. Skipped and unimplemented checks do not silently count as successful coverage.
-- Self-contained HTML report with a one-page executive summary, score formula, category table, prioritized top issues, all findings and parsing limitations.
-- JSON report export for later integrations.
-- Optional Playwright/Chromium PDF export through the same RTL HTML renderer.
+- Explainable provisional score with visible penalties, configured/assessed category weights, normalized weights and weighted coverage. Skipped and unimplemented checks do not count as successful coverage.
+- Interactive, self-contained RTL HTML report with executive summary, score formula, category table, prioritized top issues, finding search/severity filters, all findings and parsing limitations.
+- JSON report export and optional Playwright/Chromium PDF export.
+- In-app finding filters for text, rule ID, severity and category.
+- Parsing coverage panel that displays extracted element counts and parser limitations separately from thesis-quality findings.
 - Synthetic DOCX fixtures generated during tests and GitHub Actions for pytest + Ruff.
 
 ## Run locally
@@ -41,27 +42,21 @@ Install the extra and its local Chromium browser:
     pip install -e ".[dev,pdf]"
     python -m playwright install chromium
 
-PDF export does not use a CDN. Chromium provides Arabic-script shaping and browser RTL layout; the renderer uses locally installed Persian-capable fonts where available, such as Tahoma, Noto Naskh Arabic or DejaVu Sans. **A licensed font binary is not bundled yet**, so verify the rendered PDF on the actual demo machine before presenting it. If Playwright or Chromium is unavailable, the endpoint returns a clear 503 error; JSON and HTML exports do not depend on it.
-
-The PDF extra increases the install footprint. For slim/container deployments that do not install the extra, JSON and HTML report exports remain available.
+PDF export does not use a CDN. Chromium provides Arabic-script shaping and browser RTL layout; the renderer uses locally installed Persian-capable fonts where available, such as Tahoma, Noto Naskh Arabic or DejaVu Sans. A licensed font binary is not bundled yet, so verify the rendered PDF on the actual demo machine before presenting it. Without Playwright/Chromium, the PDF endpoint returns 503; JSON and HTML remain available.
 
 ## API usage
 
-Inspect a document and receive a bounded parsing summary plus the provisional score:
+Inspect a document:
 
     curl -F "file=@draft.docx" http://127.0.0.1:8000/api/v1/inspect
 
-Export JSON:
+Export JSON, self-contained HTML, or PDF:
 
     curl -F "file=@draft.docx" "http://127.0.0.1:8000/api/v1/report?format=json" -o thesischeck-report.json
-
-Export self-contained HTML:
-
     curl -F "file=@draft.docx" "http://127.0.0.1:8000/api/v1/report?format=html" -o thesischeck-report.html
-
-Export PDF after installing the optional browser:
-
     curl -F "file=@draft.docx" "http://127.0.0.1:8000/api/v1/report?format=pdf" -o thesischeck-report.pdf
+
+PDF requires the optional browser installation above.
 
 ## Tests and lint
 
@@ -72,8 +67,8 @@ Synthetic fixture generator: scripts/generate_fixtures.py. Fixture content is fi
 
 ## Important limitations and safety boundaries
 
-- rulesets/mazandaran_engineering_example.yaml is **unverified example configuration**, not the official University of Mazandaran guideline. Formatting rules that require official fonts, margins, spacing or required headings are disabled/skipped until valid values are supplied.
-- The score is **not an academic grade** or a guarantee of scientific quality. Formula: category score = max(0, 100 - errors×12 - warnings×4 - info×1). Category weight is prorated to the share of configured rules that actually ran; the overall score is the weighted mean of assessed categories only. The report exposes both weighted coverage and unassessed categories.
+- rulesets/mazandaran_engineering_example.yaml is unverified example configuration, not the official University of Mazandaran guideline. Formatting rules that require official fonts, margins, spacing or required headings are disabled/skipped until verified values are supplied.
+- The score is not an academic grade or a guarantee of scientific quality. Category penalty formula: max(0, 100 - errors×12 - warnings×4 - info×1). Each category's assessed weight is prorated to configured rules that actually ran; the overall score is the weighted mean of assessed categories only. The report exposes weighted coverage and unassessed categories.
 - Citation/reference parsing is heuristic. Missing matches do not prove an invalid source, and similarity does not prove duplication. No citation, DOI, venue or page number is fabricated.
 - DOCX page numbers cannot be reliably computed by python-docx; source IDs and heading paths are used. PDF extraction may mis-order columns, formulas and mixed RTL/LTR content. Scanned-PDF OCR and complete footnote/equation extraction are not implemented.
 - Research traceability, LLM-assisted writing checks, user accounts, payments and persistent job management are not implemented.
