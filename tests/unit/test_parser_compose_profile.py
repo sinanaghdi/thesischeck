@@ -16,7 +16,10 @@ def test_parser_service_has_no_host_port_and_internal_only_network() -> None:
     assert parser["networks"] == ["parser-private"]
     assert compose["networks"]["parser-private"]["internal"] is True
     assert "parser-private" in web["networks"]
-    assert "default" in web["networks"]
+    assert "edge-private" in web["networks"]
+    edge = services["edge"]
+    assert edge["networks"] == ["edge-private"]
+    assert edge["volumes"] == ["./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro"]
     assert web["environment"]["PARSER_BACKEND"] == "service"
     assert web["environment"]["PARSER_SERVICE_URL"] == "http://parser:8001"
     assert parser["environment"]["DEBUG"] == "false"

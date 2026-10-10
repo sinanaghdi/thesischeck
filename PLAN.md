@@ -16,7 +16,8 @@
 - [x] Phase 7 (slice 4): deterministic adversarial upload regressions, malformed/conflicting Content-Length tests, parser-worker environment allowlist tests, and an opt-in 100-logical-page performance benchmark harness.
 - [x] Phase 7 (slice 5): harden the local Docker runtime with loopback-only port publishing, read-only root filesystem, bounded temporary storage/resources, no-new-privileges, dropped capabilities and Uvicorn concurrency limits.
 - [x] Phase 7 (slice 6): add a token-authenticated parser-service container on an internal-only network, without a published host port or outbound route; keep DB/JWT/LLM settings out of its environment and retain supervised parsing inside it.
-- [ ] Phase 7 follow-up: run benchmark on the intended deployment host, add property-based fuzzing if the dependency budget permits, verify container restrictions on the target Docker host, add trusted-edge body limits and shared rate limiting, define retention/deletion behavior if persistence is introduced, and complete production acceptance tests.
+- [x] Phase 7 (slice 7): add a loopback-only Nginx edge, per-source-IP request/connection limits, request-body cap, slow-client timeouts and streaming proxying; remove direct host publishing from the web service.
+- [ ] Phase 7 follow-up: run benchmark on the intended deployment host, add property-based fuzzing if the dependency budget permits, test actual Compose startup and container restrictions on the target Docker host, coordinate limits across edge replicas if scaled, add authentication/authorization, define retention/deletion behavior if persistence is introduced, and complete production acceptance tests.
 
 ## Architecture decisions
 
@@ -65,3 +66,10 @@
 - Docker Compose runs the web API and parser service as separate containers. The parser service has no published host port and is attached only to an `internal: true` network; the web app uses a server-side shared token over that network.
 - The parser service receives only parsing limits and the internal token, not database/JWT/LLM settings. It invokes the existing supervised subprocess and does not persist the source or normalized result.
 - Containers still share the host kernel, and the parser can reach its web peer on the private network. This is defense in depth, not a complete sandbox; trusted-edge controls, benchmarking and security acceptance remain mandatory before public deployment.
+
+
+## Phase 7 slice 7 HTTP edge boundary
+
+- Nginx is the only host-published service and binds to loopback by default. It enforces a bounded request body, per-source-IP rate and concurrent-connection limits, slow-body/read timeouts, and disables request-body buffering to disk.
+- The web app is not host-published and is reachable through the internal edge network; the parser remains on its separate internal network.
+- Nginx rate/connection zones are shared within this single edge instance. Multiple edge replicas need coordinated rate enforcement; do not describe this profile as a complete public-production gateway.

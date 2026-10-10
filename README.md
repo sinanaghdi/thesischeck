@@ -2,7 +2,7 @@
 
 ThesisCheck is a draft-review and format-control assistant for graduate theses. It helps identify potential formatting, citation, terminology, abstract and structure issues before supervisor review. It does not generate thesis sections for submission, fabricate references, or silently rewrite source text.
 
-> **Current status: Phase 7 slice 6 — separate private-network parser service for the Docker demo.** The app accepts DOCX/PDF for in-memory inspection, runs deterministic offline checks, produces a coverage-aware provisional score, and exports JSON and self-contained RTL HTML. PDF export uses optional Playwright/Chromium.
+> **Current status: Phase 7 slice 7 — loopback-only Nginx edge with request limits and streamed proxying.** The app accepts DOCX/PDF for in-memory inspection, runs deterministic offline checks, produces a coverage-aware provisional score, and exports JSON and self-contained RTL HTML. PDF export uses optional Playwright/Chromium.
 
 ## Implemented
 
@@ -56,11 +56,13 @@ Keep `DEBUG=false` and replace the placeholder `JWT_SECRET` with a strong random
 
     docker compose up --build
 
-The Compose profile publishes the web app on `127.0.0.1` only. The web container has a read-only root filesystem, bounded `/tmp`, dropped Linux capabilities, no-new-privileges, CPU/memory/PID/file-descriptor limits, and a four-connection Uvicorn limit. The parser service receives only parsing limits and the internal token—not the database, JWT or LLM settings. It has no published host port and joins only the `parser-private` network with `internal: true`, so it has no outbound route. Uploaded data may temporarily use `/tmp`; no persistent upload volume is configured.
+The Compose profile publishes only the Nginx edge on `127.0.0.1:8000`. The web API has no host-published port and is reachable through the internal edge network; the parser is attached only to its own internal network and has no published port or outbound route. Both application containers are read-only, resource-limited and run without added Linux capabilities.
 
-The web app sends raw document bytes to `http://parser:8001/internal/parse` with the shared token. The parser service checks the token using a constant-time comparison, applies a raw-body limit, and invokes the supervised parsing subprocess. The normalized result is returned only for that request.
+The Nginx edge enforces a request-body cap, per-source-IP rate limiting and concurrent-connection limiting for file inspection/report routes, connection/read timeouts, and streaming proxying without request-body disk buffering. Its default request limit is 31 MiB (30 MiB upload plus multipart overhead); if you change `MAX_UPLOAD_MB`, update `client_max_body_size` in `deploy/nginx.conf` to at least the configured file limit plus multipart overhead. The web app's own raw-body guard and file-size validation remain in place.
 
-This is stronger than running the parser subprocess inside the web container, but it is not an absolute sandbox: both containers share the host kernel, and the parser can reach its web peer on the private network. Do not expose the demo directly to the public internet; trusted-edge limits, shared rate limiting, retention/deletion rules if persistence is introduced, and target-environment acceptance testing remain open.
+The web app sends raw document bytes to `http://parser:8001/internal/parse` with the shared token. The parser service checks that token using a constant-time comparison, applies its own raw-body limit, and invokes the supervised parsing subprocess. It receives no database, JWT or LLM configuration and does not persist inputs or normalized results.
+
+These are layered defenses, not an absolute sandbox: the containers share the host kernel, and the parser can contact its web peer on the private network. The configured Nginx shared zone rate limits requests at this single edge instance; horizontally scaled edge instances would need coordinated/shared enforcement. Authentication/authorization, a production trusted-edge setup, retention policy if persistence is introduced, and target-environment security/load acceptance remain open.
 
 ## PDF export (optional)
 
@@ -87,7 +89,7 @@ PDF requires the optional browser installation above.
 
 ## API guardrails and deployment boundary
 
-- `INSPECTION_RATE_LIMIT` and `INSPECTION_RATE_WINDOW_SECONDS` configure the process-local request limiter. The limiter applies to `POST /api/v1/inspect` and `POST /api/v1/report`; `429` responses include `Retry-After`. `X-Forwarded-For` is intentionally ignored because it is trustworthy only when set by a configured proxy.
+- `INSPECTION_RATE_LIMIT` and `INSPECTION_RATE_WINDOW_SECONDS` configure the process-local application limiter. In Compose, Nginx also applies per-source-IP shared-zone rate and connection limits before the request reaches the application. The app deliberately does not trust forwarded-IP headers; the edge is the only route to the web container.
 - Rate-limit state is held in process memory, so it is not shared across multiple workers or replicas. Put a shared rate limiter at the trusted reverse proxy before exposing the service publicly.
 - Inspection/report responses use `Cache-Control: no-store` and `Pragma: no-cache`; baseline `nosniff`, referrer-policy and frame-denial headers are set. Unexpected processing exceptions return a generic 500 message, while known parser failures return a controlled 422 message.
 - These guardrails do **not** make file parsing safe for unrestricted public traffic. A truly isolated container/worker identity, request-body limits at the edge, authentication/authorization, shared rate limiting, fuzz testing, retention/deletion workflows and load testing are still required before public deployment.
