@@ -193,7 +193,7 @@ def parse_document_via_service(
             raw_response = exc.read(64 * 1024 + 1)
         finally:
             exc.close()
-    except (TimeoutError, socket.timeout):
+    except TimeoutError:
         raise ParserWorkerTimeout("Parser service deadline exceeded.") from None
     except urllib.error.URLError as exc:
         if isinstance(exc.reason, (TimeoutError, socket.timeout)):
