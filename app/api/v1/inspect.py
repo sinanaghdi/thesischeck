@@ -1,20 +1,23 @@
-"""Upload inspection endpoint; input is parsed in memory and never persistently stored."""
+"""Document inspection and report-export endpoints; uploads are never persisted."""
 
 from __future__ import annotations
 
+import json
 from collections import Counter
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
 from app.core.config import get_settings
 from app.parsing.dispatcher import parse_document
 from app.parsing.safety import DocumentValidationError
+from app.reports.render_html import render_html_report
+from app.reports.scoring import HealthReport, build_health_report
 from app.rules.engine import run_rules
-from app.rules.findings import CheckReport
 from app.rules.loader import load_ruleset
 from app.schemas.document import NormalizedDocument
 
@@ -34,14 +37,26 @@ class InspectionSummary(BaseModel):
     preview_paragraphs: list[dict[str, str | int | None]] = Field(default_factory=list)
     format_metadata: dict[str, Any] = Field(default_factory=dict)
     diagnostics: list[dict[str, str]] = Field(default_factory=list)
-    checks: CheckReport
+    health_report: HealthReport
     privacy_note: str
 
 
+def _process_document(
+    filename: str,
+    content: bytes,
+    *,
+    max_size_bytes: int,
+) -> tuple[NormalizedDocument, HealthReport]:
+    document = parse_document(filename, content, max_size_bytes=max_size_bytes)
+    ruleset = load_ruleset(RULESET_PATH)
+    checks = run_rules(document, ruleset)
+    return document, build_health_report(document, checks, ruleset)
+
+
 def summarize_document(
-    document: NormalizedDocument, checks: CheckReport
+    document: NormalizedDocument, report: HealthReport
 ) -> InspectionSummary:
-    """Return a bounded parser summary and deterministic findings."""
+    """Return a bounded parser summary and the explainable report summary."""
     counts = Counter(element.kind for element in document.elements)
     headings = [
         {
@@ -77,7 +92,7 @@ def summarize_document(
         preview_paragraphs=previews,
         format_metadata=document.format_metadata,
         diagnostics=diagnostics,
-        checks=checks,
+        health_report=report,
         privacy_note=(
             "فایل در این نسخه برای همین درخواست و در حافظه موقت پردازش می‌شود؛ "
             "این API فایل یا گزارش را در فضای ذخیره‌سازی دائمی نگه نمی‌دارد و از سرویس "
@@ -86,12 +101,9 @@ def summarize_document(
     )
 
 
-@router.post("/inspect", response_model=InspectionSummary)
-async def inspect_document(file: UploadFile = File(...)) -> InspectionSummary:
-    """Validate, parse and run configured deterministic checks; never saves the upload."""
+async def _read_and_process(file: UploadFile) -> tuple[NormalizedDocument, HealthReport]:
     settings = get_settings()
     max_bytes = settings.max_upload_mb * 1024 * 1024
-    filename = file.filename or "document"
     try:
         content = await file.read(max_bytes + 1)
         if len(content) > max_bytes:
@@ -99,30 +111,79 @@ async def inspect_document(file: UploadFile = File(...)) -> InspectionSummary:
                 status_code=413,
                 detail=f"حجم فایل نباید بیشتر از {settings.max_upload_mb} مگابایت باشد.",
             )
-        document = await run_in_threadpool(
-            parse_document,
-            filename,
+        return await run_in_threadpool(
+            _process_document,
+            file.filename or "document",
             content,
             max_size_bytes=max_bytes,
         )
-        ruleset = load_ruleset(RULESET_PATH)
-        checks = await run_in_threadpool(run_rules, document, ruleset)
-        return summarize_document(document, checks)
     except DocumentValidationError as exc:
         status_code = 413 if exc.code == "file_too_large" else 400
         raise HTTPException(
             status_code=status_code,
             detail={"code": exc.code, "message": exc.message},
         ) from exc
-    except HTTPException:
-        raise
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except HTTPException:
+        raise
     except Exception as exc:
-        # Do not return internal exception details or source text to the browser.
         raise HTTPException(
             status_code=500,
-            detail="پردازش فایل یا اجرای قواعد قابل انجام نبود؛ گزارش خطا نباید شامل متن سند باشد.",
+            detail="پردازش فایل یا اجرای قواعد قابل انجام نبود؛ متن سند نباید در پیام خطا ثبت شود.",
         ) from exc
     finally:
         await file.close()
+
+
+@router.post("/inspect", response_model=InspectionSummary)
+async def inspect_document(file: UploadFile = File(...)) -> InspectionSummary:
+    """Validate, parse, score configured checks, and summarize one document."""
+    document, report = await _read_and_process(file)
+    return summarize_document(document, report)
+
+
+@router.post("/report", tags=["report-export"])
+async def export_report(
+    file: UploadFile = File(...),
+    output_format: Literal["json", "html", "pdf"] = Query(default="json", alias="format"),
+) -> Response:
+    """Return a downloadable report without saving the source document or report."""
+    _document, report = await _read_and_process(file)
+    if output_format == "json":
+        content = json.dumps(
+            report.model_dump(mode="json"),
+            ensure_ascii=False,
+            indent=2,
+        )
+        return Response(
+            content=content,
+            media_type="application/json",
+            headers={"Content-Disposition": 'attachment; filename="thesischeck-report.json"'},
+        )
+
+    html = render_html_report(report)
+    if output_format == "html":
+        return Response(
+            content=html,
+            media_type="text/html; charset=utf-8",
+            headers={"Content-Disposition": 'attachment; filename="thesischeck-report.html"'},
+        )
+
+    try:
+        from app.reports.render_pdf import PdfExportUnavailable, render_pdf_bytes
+
+        pdf_bytes = await run_in_threadpool(render_pdf_bytes, html)
+    except PdfExportUnavailable as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "خروجی PDF در این محیط آماده نیست. وابستگی اختیاری Playwright و مرورگر "
+                "Chromium را طبق README نصب کنید."
+            ),
+        ) from exc
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'attachment; filename="thesischeck-report.pdf"'},
+    )

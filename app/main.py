@@ -16,7 +16,7 @@ settings = get_settings()
 app = FastAPI(
     title=settings.app_name,
     description="Persian-first thesis writing-quality and format-control assistant.",
-    version="0.2.0",
+    version="0.3.0",
     debug=settings.debug,
 )
 app.mount(

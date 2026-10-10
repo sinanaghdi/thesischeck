@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "thesischeck"
-version = "0.2.0"
+version = "0.3.0"
 description = "Persian-first thesis writing-quality and format-control assistant"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -32,6 +32,7 @@ dev = [
   "httpx>=0.27,<1.0",
   "ruff>=0.6,<1.0",
 ]
+pdf = ["playwright>=1.48,<2.0"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["app"]

@@ -42,6 +42,37 @@ document.addEventListener("DOMContentLoaded", () => {
     status.textContent = message;
   }
 
+  function renderScore(report) {
+    const value = document.querySelector("#score-value");
+    value.textContent = report.score === null ? "—" : Number(report.score).toFixed(1);
+    document.querySelector("#score-label").textContent = report.score_label_fa || "امتیاز موقت";
+    document.querySelector("#score-coverage").textContent =
+      "پوشش وزن‌ها: " + Number(report.coverage_percent).toFixed(1) + "%";
+    document.querySelector("#score-summary").textContent = report.summary_fa || "";
+    document.querySelector("#score-formula").textContent = report.score_formula_fa || "";
+    document.querySelector("#score-weight-note").textContent =
+      "وزن ارزیابی‌شده: " + report.assessed_weight_total + " از " + report.configured_weight_total +
+      ". وزن‌های مربوط به قابلیت‌های پیاده‌سازی‌نشده یا قواعد ردشده در مخرج نرمال‌شده لحاظ نمی‌شوند.";
+    const container = document.querySelector("#score-categories");
+    container.replaceChildren();
+    (report.categories || []).forEach((category) => {
+      const card = make("article", "score-category " + (category.available ? "is-assessed" : "is-unavailable"));
+      const heading = make("div", "score-category-heading");
+      heading.append(make("strong", "", category.title_fa));
+      heading.append(make("span", "", category.score === null ? "خارج از امتیاز" : Number(category.score).toFixed(1) + "/100"));
+      const weight = make("p", "score-category-meta",
+        "وزن " + category.configured_weight + "% · سهم نرمال‌شده " +
+        Number(category.normalized_weight || 0).toFixed(2) + "% · " + category.finding_count + " یافته");
+      const progress = make("div", "score-progress");
+      const bar = make("span", "");
+      bar.style.width = category.score === null ? "0%" : Math.max(0, Math.min(100, Number(category.score))) + "%";
+      progress.append(bar);
+      const note = make("p", "score-category-note", category.explanation_fa);
+      card.append(heading, weight, progress, note);
+      container.append(card);
+    });
+  }
+
   function renderChecks(report) {
     const coverage = document.querySelector("#check-coverage");
     coverage.textContent = report.rules_checked + " اجرا / " + report.rules_skipped + " ردشده";
@@ -160,7 +191,8 @@ document.addEventListener("DOMContentLoaded", () => {
       },
     );
     document.querySelector("#result-privacy").textContent = data.privacy_note;
-    renderChecks(data.checks || { rules_checked: 0, rules_skipped: 0, findings: [], results: [] });
+    renderScore(data.health_report || {});
+    renderChecks((data.health_report && data.health_report.checks) || { rules_checked: 0, rules_skipped: 0, findings: [], results: [] });
     results.hidden = false;
     status.className = "upload-status is-success";
     status.textContent = "استخراج و بررسی‌های قطعی انجام شد. یافته‌ها ابتکاری‌اند و باید با سند اصلی بازبینی شوند؛ AI و امتیازدهی هنوز فعال نیستند.";
@@ -207,4 +239,49 @@ document.addEventListener("DOMContentLoaded", () => {
       submit.textContent = "بررسی ساختار فایل";
     }
   });
+  document.querySelectorAll("[data-export-format]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) {
+        document.querySelector("#export-status").textContent = "برای خروجی گرفتن، ابتدا فایل را دوباره انتخاب کنید.";
+        return;
+      }
+      const outputFormat = button.dataset.exportFormat;
+      const status = document.querySelector("#export-status");
+      const formData = new FormData();
+      formData.append("file", file, file.name);
+      document.querySelectorAll("[data-export-format]").forEach((item) => { item.disabled = true; });
+      status.textContent = "در حال تولید خروجی " + outputFormat.toUpperCase() + "…";
+      try {
+        const response = await fetch("/api/v1/report?format=" + encodeURIComponent(outputFormat), {
+          method: "POST",
+          body: formData,
+        });
+        if (!response.ok) {
+          let message = "ساخت خروجی ناموفق بود.";
+          try {
+            const payload = await response.json();
+            if (payload.detail) message = typeof payload.detail === "string" ? payload.detail : (payload.detail.message || message);
+          } catch (_error) { /* keep the safe fallback message */ }
+          status.textContent = message;
+          return;
+        }
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "thesischeck-report." + outputFormat;
+        document.body.append(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        status.textContent = "خروجی " + outputFormat.toUpperCase() + " آماده شد.";
+      } catch (_error) {
+        status.textContent = "ارتباط با سرور برقرار نشد؛ دوباره تلاش کنید.";
+      } finally {
+        document.querySelectorAll("[data-export-format]").forEach((item) => { item.disabled = false; });
+      }
+    });
+  });
+
 });
