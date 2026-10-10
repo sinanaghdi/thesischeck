@@ -2,7 +2,7 @@
 
 ThesisCheck is a draft-review and format-control assistant for graduate theses. It helps identify potential formatting, citation, terminology, abstract and structure issues before supervisor review. It does not generate thesis sections for submission, fabricate references, or silently rewrite source text.
 
-> **Current status: Phase 7 slice 2 — supervised parser subprocess.** The app accepts DOCX/PDF for in-memory inspection, runs deterministic offline checks, produces a coverage-aware provisional score, and exports JSON and self-contained RTL HTML. PDF export uses optional Playwright/Chromium.
+> **Current status: Phase 7 slice 3 — raw request-body limits.** The app accepts DOCX/PDF for in-memory inspection, runs deterministic offline checks, produces a coverage-aware provisional score, and exports JSON and self-contained RTL HTML. PDF export uses optional Playwright/Chromium.
 
 ## Implemented
 
@@ -20,6 +20,7 @@ ThesisCheck is a draft-review and format-control assistant for graduate theses. 
 - Parsing coverage panel that displays extracted element counts and parser limitations separately from thesis-quality findings.
 - Per-process inspection/report rate limiting (configurable; default 20 requests per IP per 60 seconds), no-store API responses, baseline security headers, and sanitized unexpected errors.
 - Supervised parser subprocess with a configurable wall-clock deadline, bounded concurrent worker slots, a minimal environment, and optional POSIX CPU/address-space/file-descriptor limits.
+- Streaming raw-body cap on upload endpoints: max configured file size plus 1 MiB multipart overhead; oversized declared or streamed requests are rejected with HTTP 413 before document parsing.
 - Synthetic DOCX fixtures generated during tests and GitHub Actions for pytest + Ruff.
 
 ## Run locally
@@ -66,6 +67,12 @@ PDF requires the optional browser installation above.
 - Rate-limit state is held in process memory, so it is not shared across multiple workers or replicas. Put a shared rate limiter at the trusted reverse proxy before exposing the service publicly.
 - Inspection/report responses use `Cache-Control: no-store` and `Pragma: no-cache`; baseline `nosniff`, referrer-policy and frame-denial headers are set. Unexpected processing exceptions return a generic 500 message, while known parser failures return a controlled 422 message.
 - These guardrails do **not** make file parsing safe for unrestricted public traffic. A truly isolated container/worker identity, request-body limits at the edge, authentication/authorization, shared rate limiting, fuzz testing, retention/deletion workflows and load testing are still required before public deployment.
+
+## Request-body limits
+
+- The ASGI guard checks declared `Content-Length` before multipart parsing and counts incoming chunks when that header is absent or understated. It returns HTTP 413 with a stable error code and does not buffer the whole request body in its own middleware.
+- The body cap is `MAX_UPLOAD_MB * 1 MiB + 1 MiB` for multipart framing and fields. The separate parser validation still caps the uploaded file bytes at `MAX_UPLOAD_MB`.
+- Configure the same or a stricter body-size cap at the trusted reverse proxy/server edge; this application middleware is defense in depth, not a replacement for network-edge limits.
 
 ## Parser worker boundary
 
