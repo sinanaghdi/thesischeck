@@ -10,8 +10,15 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_compose_profile_has_local_only_and_constrained_runtime() -> None:
     compose = yaml.safe_load((ROOT / "docker-compose.yml").read_text(encoding="utf-8"))
     web = compose["services"]["web"]
+    edge = compose["services"]["edge"]
 
-    assert web["ports"] == ["127.0.0.1:8000:8000"]
+    assert web.get("ports", []) == []
+    assert edge["ports"] == ["127.0.0.1:8000:8080"]
+    assert edge["read_only"] is True
+    assert edge["cap_drop"] == ["ALL"]
+    assert "no-new-privileges:true" in edge["security_opt"]
+    assert edge["pids_limit"] == 64
+    assert edge["mem_limit"] == "128m"
     assert web["read_only"] is True
     assert web["init"] is True
     assert web["cap_drop"] == ["ALL"]
