@@ -23,6 +23,16 @@ _REF_RE = re.compile(
 )
 
 
+def _english_label(label: str) -> str:
+    return {
+        "شکل": "figure",
+        "تصویر": "figure",
+        "جدول": "table",
+        "الگوریتم": "algorithm",
+        "fig.": "figure",
+        "fig": "figure",
+    }.get(label.casefold(), label)
+
 def _key(label: str, number: str) -> tuple[str, tuple[int, ...]]:
     parts = tuple(
         number_to_int(part) or 0 for part in re.split(r"[-.]", number)
@@ -96,7 +106,7 @@ def check_figure_table_consistency(
                     _finding(
                         rule, duplicate,
                         message_fa=f"شماره کپشن «{label} {'-'.join(map(str, parts))}» بیش از یک بار دیده شد.",
-                        message_en=f"Caption number “{label} {'-'.join(map(str, parts))}” appears more than once.",
+                        message_en=f"Caption number “{_english_label(label)} {'-'.join(map(str, parts))}” appears more than once.",
                         fix_fa="شماره و ارجاع‌های مرتبط را در سند اصلی بررسی کنید.",
                         fix_en="Review the caption number and related cross-references in the original document.",
                         snippet=duplicate.text,
@@ -109,7 +119,7 @@ def check_figure_table_consistency(
                 _finding(
                     rule, elements[0],
                     message_fa=f"برای کپشن «{label} {'-'.join(map(str, parts))}» ارجاعی در متن شناسایی نشد.",
-                    message_en=f"No in-text reference was detected for caption “{label} {'-'.join(map(str, parts))}”.",
+                    message_en=f"No in-text reference was detected for caption “{_english_label(label)} {'-'.join(map(str, parts))}”.",
                     fix_fa="بررسی کنید که شکل یا جدول در متن معرفی شده باشد؛ ممکن است الگوی ارجاع متفاوت باشد.",
                     fix_en="Check that the figure or table is referenced in the body; the reference phrasing may differ.",
                     snippet=elements[0].text,
@@ -126,7 +136,7 @@ def check_figure_table_consistency(
                 _finding(
                     rule, element,
                     message_fa=f"ارجاعی به «{label} {'-'.join(map(str, parts))}» دیده شد، اما کپشن متناظر تشخیص داده نشد.",
-                    message_en=f"A reference to “{label} {'-'.join(map(str, parts))}” was found, but no matching caption was detected.",
+                    message_en=f"A reference to “{_english_label(label)} {'-'.join(map(str, parts))}” was found, but no matching caption was detected.",
                     fix_fa="وجود کپشن و شماره آن را بررسی کنید؛ استخراج تصویرهای PDF ممکن است ناقص باشد.",
                     fix_en="Check that the caption and number exist; PDF image/caption extraction may be incomplete.",
                     snippet=element.text,
@@ -149,7 +159,7 @@ def check_figure_table_consistency(
                 _finding(
                     rule, element,
                     message_fa=f"در توالی شماره‌گذاری «{label}»، شماره {missing} شناسایی نشد.",
-                    message_en=f"Caption numbering for “{label}” has a gap at {missing}.",
+                    message_en=f"Caption numbering for “{_english_label(label)}” has a gap at {missing}.",
                     fix_fa="شماره‌ها را طبق سبک شماره‌گذاری سند بررسی کنید؛ در شماره‌گذاری فصل‌محور این هشدار ممکن است کاربرد نداشته باشد.",
                     fix_en="Review numbering against the document style; chapter-based numbering may make this warning inapplicable.",
                     snippet=element.text,
