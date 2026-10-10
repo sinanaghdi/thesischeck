@@ -2,7 +2,7 @@
 
 ThesisCheck is a draft-review and format-control assistant for graduate theses. It helps identify potential formatting, citation, terminology, abstract and structure issues before supervisor review. It does not generate thesis sections for submission, fabricate references, or silently rewrite source text.
 
-> **Current status: Phase 7 slice 3 — raw request-body limits.** The app accepts DOCX/PDF for in-memory inspection, runs deterministic offline checks, produces a coverage-aware provisional score, and exports JSON and self-contained RTL HTML. PDF export uses optional Playwright/Chromium.
+> **Current status: Phase 7 slice 4 — adversarial input regressions and an opt-in 100-page benchmark harness.** The app accepts DOCX/PDF for in-memory inspection, runs deterministic offline checks, produces a coverage-aware provisional score, and exports JSON and self-contained RTL HTML. PDF export uses optional Playwright/Chromium.
 
 ## Implemented
 
@@ -79,6 +79,20 @@ PDF requires the optional browser installation above.
 - `PARSER_WORKER_TIMEOUT_SECONDS` defaults to 35; `PARSER_WORKER_CPU_SECONDS` defaults to 25 where POSIX CPU limits are available; `PARSER_WORKER_MEMORY_MB` defaults to 1024 where POSIX address-space limits are available; `PARSER_WORKER_CONCURRENCY` defaults to 2 per application process.
 - The worker receives the source bytes through stdin, emits a validated JSON document over stdout, runs from the system temporary directory, and does not inherit application secrets in its environment. Timeout, busy and abnormal-worker failures return controlled API errors.
 - The subprocess runs under the same OS user and can still access the host's files/network. POSIX limits are platform-dependent and Windows does not provide these `resource` limits. **This is process supervision, not a complete sandbox.** Public deployment still requires an isolated container/worker identity, no network access, secret separation, shared edge limits and resource controls at the OS/container level.
+
+## Adversarial regression tests and performance benchmark
+
+The automated suite includes deterministic malformed upload payloads, DOCX ZIP expansion/entry limits, extreme compression-ratio rejection, malformed or conflicting `Content-Length` headers, and a check that application secrets are not copied into the parser subprocess environment.
+
+Run the opt-in 100-logical-page DOCX benchmark from the repository root:
+
+    python -m scripts.benchmark_100_page_docx
+
+The benchmark builds a fictional in-memory DOCX with explicit page breaks, measures the supervised parser path, prints a JSON summary, and exits nonzero when parse time exceeds the default 30-second threshold. Useful variants:
+
+    python -m scripts.benchmark_100_page_docx --pages 100 --paragraphs-per-page 6 --max-seconds 30
+
+The benchmark is not part of CI because shared-runner timings are noisy. Record results on the actual target environment before treating the threshold as an acceptance result. DOCX page layout varies by word processor and installed fonts; the reported page count is the requested logical-page count, not a guarantee of identical pagination in every editor.
 
 ## Tests and lint
 
