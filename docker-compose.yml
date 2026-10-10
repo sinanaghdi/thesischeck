@@ -3,8 +3,18 @@ services:
     build: .
     env_file:
       - .env
+    environment:
+      PARSER_BACKEND: service
+      PARSER_SERVICE_URL: http://parser:8001
+      PARSER_SERVICE_TOKEN: ${PARSER_SERVICE_TOKEN:?Set PARSER_SERVICE_TOKEN in .env}
+    depends_on:
+      parser:
+        condition: service_healthy
     ports:
       - "127.0.0.1:8000:8000"
+    networks:
+      - default
+      - parser-private
     restart: unless-stopped
     init: true
     read_only: true
@@ -21,3 +31,46 @@ services:
       nofile:
         soft: 256
         hard: 512
+
+  parser:
+    build: .
+    command: ["uvicorn", "app.parsing.service:app", "--host", "0.0.0.0", "--port", "8001", "--limit-concurrency", "2"]
+    environment:
+      APP_NAME: "ThesisCheck Parser"
+      APP_ENV: development
+      DEBUG: "false"
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-30}
+      PARSER_WORKER_TIMEOUT_SECONDS: ${PARSER_WORKER_TIMEOUT_SECONDS:-35}
+      PARSER_WORKER_CPU_SECONDS: ${PARSER_WORKER_CPU_SECONDS:-25}
+      PARSER_WORKER_MEMORY_MB: ${PARSER_WORKER_MEMORY_MB:-1024}
+      PARSER_WORKER_CONCURRENCY: ${PARSER_WORKER_CONCURRENCY:-2}
+      PARSER_SERVICE_TOKEN: ${PARSER_SERVICE_TOKEN:?Set PARSER_SERVICE_TOKEN in .env}
+    networks:
+      - parser-private
+    restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs:
+      - "/tmp:rw,noexec,nosuid,nodev,size=192m"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 96
+    mem_limit: 1536m
+    cpus: "1.0"
+    ulimits:
+      nofile:
+        soft: 128
+        hard: 256
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health', timeout=2).read()"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+networks:
+  default: {}
+  parser-private:
+    internal: true

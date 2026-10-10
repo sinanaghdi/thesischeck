@@ -2,7 +2,7 @@
 
 ThesisCheck is a draft-review and format-control assistant for graduate theses. It helps identify potential formatting, citation, terminology, abstract and structure issues before supervisor review. It does not generate thesis sections for submission, fabricate references, or silently rewrite source text.
 
-> **Current status: Phase 7 slice 5 — hardened local Docker runtime profile.** The app accepts DOCX/PDF for in-memory inspection, runs deterministic offline checks, produces a coverage-aware provisional score, and exports JSON and self-contained RTL HTML. PDF export uses optional Playwright/Chromium.
+> **Current status: Phase 7 slice 6 — separate private-network parser service for the Docker demo.** The app accepts DOCX/PDF for in-memory inspection, runs deterministic offline checks, produces a coverage-aware provisional score, and exports JSON and self-contained RTL HTML. PDF export uses optional Playwright/Chromium.
 
 ## Implemented
 
@@ -22,7 +22,7 @@ ThesisCheck is a draft-review and format-control assistant for graduate theses. 
 - Supervised parser subprocess with a configurable wall-clock deadline, bounded concurrent worker slots, a minimal environment, and optional POSIX CPU/address-space/file-descriptor limits.
 - Streaming raw-body cap on upload endpoints: max configured file size plus 1 MiB multipart overhead; oversized declared or streamed requests are rejected with HTTP 413 before document parsing.
 - Synthetic DOCX fixtures generated during tests and GitHub Actions for pytest + Ruff.
-- Hardened local Docker profile: non-root runtime user, loopback-only port binding, read-only container root filesystem, temporary filesystem for uploads, dropped Linux capabilities, no-new-privileges, CPU/memory/PID limits, and bounded Uvicorn concurrency.
+- Hardened Docker profile with distinct web and parser-service containers on an internal network. Both run non-root with read-only root filesystems and resource limits; parser has no published host port or outbound network route.
 
 ## Run locally
 
@@ -48,13 +48,19 @@ Create a local environment file and keep it out of Git:
     # macOS/Linux
     # cp .env.example .env
 
-Keep `DEBUG=false`; replace the placeholder `JWT_SECRET` with a strong random value before sharing the environment file, even though authentication is not implemented in this demo. Start the local demo:
+Generate a strong internal token and paste it after `PARSER_SERVICE_TOKEN=` in `.env`:
+
+    python -c "import secrets; print(secrets.token_urlsafe(48))"
+
+Keep `DEBUG=false` and replace the placeholder `JWT_SECRET` with a strong random value before sharing the environment file, even though authentication is not implemented in this demo. Start the local demo:
 
     docker compose up --build
 
-The Compose profile binds the web port to `127.0.0.1` only, runs as the unprivileged `appuser`, enables a read-only root filesystem, mounts a bounded `/tmp`, drops Linux capabilities, enables `no-new-privileges`, caps PIDs/CPU/memory, and limits Uvicorn to four concurrent connections. Uploaded multipart data may temporarily use `/tmp`; no persistent upload volume is configured.
+The Compose profile publishes the web app on `127.0.0.1` only. The web container has a read-only root filesystem, bounded `/tmp`, dropped Linux capabilities, no-new-privileges, CPU/memory/PID/file-descriptor limits, and a four-connection Uvicorn limit. The parser service receives only parsing limits and the internal token—not the database, JWT or LLM settings. It has no published host port and joins only the `parser-private` network with `internal: true`, so it has no outbound route. Uploaded data may temporarily use `/tmp`; no persistent upload volume is configured.
 
-These are container-level defense-in-depth settings, not proof that the parser is isolated. The parser subprocess still shares the web container's OS identity and network access. Do not expose this demo directly to the public internet; use a separately constrained parser worker/container plus trusted reverse-proxy limits and shared rate limiting first.
+The web app sends raw document bytes to `http://parser:8001/internal/parse` with the shared token. The parser service checks the token using a constant-time comparison, applies a raw-body limit, and invokes the supervised parsing subprocess. The normalized result is returned only for that request.
+
+This is stronger than running the parser subprocess inside the web container, but it is not an absolute sandbox: both containers share the host kernel, and the parser can reach its web peer on the private network. Do not expose the demo directly to the public internet; trusted-edge limits, shared rate limiting, retention/deletion rules if persistence is introduced, and target-environment acceptance testing remain open.
 
 ## PDF export (optional)
 
@@ -94,9 +100,9 @@ PDF requires the optional browser installation above.
 
 ## Parser worker boundary
 
-- `PARSER_WORKER_TIMEOUT_SECONDS` defaults to 35; `PARSER_WORKER_CPU_SECONDS` defaults to 25 where POSIX CPU limits are available; `PARSER_WORKER_MEMORY_MB` defaults to 1024 where POSIX address-space limits are available; `PARSER_WORKER_CONCURRENCY` defaults to 2 per application process.
+- `PARSER_BACKEND=subprocess` is the local-development default; Compose overrides it to `service`. `PARSER_SERVICE_TIMEOUT_SECONDS` defaults to 45 seconds for the web-to-parser request. `PARSER_WORKER_TIMEOUT_SECONDS` defaults to 35; `PARSER_WORKER_CPU_SECONDS` defaults to 25 where POSIX CPU limits are available; `PARSER_WORKER_MEMORY_MB` defaults to 1024 where POSIX address-space limits are available; `PARSER_WORKER_CONCURRENCY` defaults to 2 per parser-service process.
 - The worker receives the source bytes through stdin, emits a validated JSON document over stdout, runs from the system temporary directory, and does not inherit application secrets in its environment. Timeout, busy and abnormal-worker failures return controlled API errors.
-- The subprocess runs under the same OS user and can still access the host's files/network. POSIX limits are platform-dependent and Windows does not provide these `resource` limits. **This is process supervision, not a complete sandbox.** Public deployment still requires an isolated container/worker identity, no network access, secret separation, shared edge limits and resource controls at the OS/container level.
+- With local `subprocess` mode, the child shares the app's OS identity. In Compose, the web API calls a distinct parser-service container that invokes the supervised child within its own container. The parser has no host-published port, receives no DB/JWT/LLM settings and has no outbound route. Both containers still share the host kernel, and the parser can reach its web peer over the private network. POSIX child limits are platform-dependent; Windows does not provide these `resource` limits. **This is defense in depth, not a complete security sandbox.** Public deployment still requires trusted-edge controls and independent security/load-test acceptance.
 
 ## Adversarial regression tests and performance benchmark
 
@@ -126,7 +132,7 @@ Synthetic fixture generator: scripts/generate_fixtures.py. Fixture content is fi
 - Citation/reference parsing is heuristic. Missing matches do not prove an invalid source, and similarity does not prove duplication. No citation, DOI, venue or page number is fabricated.
 - DOCX page numbers cannot be reliably computed by python-docx; source IDs and heading paths are used. PDF extraction may mis-order columns, formulas and mixed RTL/LTR content. Scanned-PDF OCR and complete footnote/equation extraction are not implemented.
 - Research traceability, LLM-assisted writing checks, user accounts, payments and persistent job management are not implemented.
-- The inspection route remains for local/demo use. The Compose profile is defense in depth only; a separate isolated parser worker/container identity, authentication, shared rate limiting at a trusted edge, request-body limits there, retention/deletion workflows and target-environment load testing are required before public deployment.
+- The inspection route remains for local/demo use. Compose now gives the parser a separate container, but this remains defense in depth rather than a complete sandbox. Authentication/authorization, shared rate limiting at a trusted edge, request-body limits there, retention/deletion policy if persistence is introduced, and target-environment load/security testing are required before public deployment.
 
 ## Privacy notice draft (Persian)
 
