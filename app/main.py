@@ -21,13 +21,13 @@ app = FastAPI(
     debug=settings.debug,
 )
 app.add_middleware(
+    RequestBodyLimitMiddleware,
+    max_body_bytes=settings.max_upload_mb * 1024 * 1024 + 1024 * 1024,
+)
+app.add_middleware(
     InspectionGuardMiddleware,
     max_requests=settings.inspection_rate_limit,
     window_seconds=settings.inspection_rate_window_seconds,
-)
-app.add_middleware(
-    RequestBodyLimitMiddleware,
-    max_body_bytes=settings.max_upload_mb * 1024 * 1024 + 1024 * 1024,
 )
 app.mount(
     "/static",
