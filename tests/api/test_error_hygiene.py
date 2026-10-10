@@ -31,3 +31,21 @@ def test_inspection_response_is_not_cacheable() -> None:
     assert response.headers["cache-control"] == "no-store"
     assert response.headers["pragma"] == "no-cache"
     assert response.headers["x-content-type-options"] == "nosniff"
+
+
+
+def test_parser_timeout_returns_gateway_timeout(monkeypatch) -> None:
+    from app.parsing import worker_client
+
+    def timed_out(*args, **kwargs):
+        raise worker_client.ParserWorkerTimeout("PRIVATE_TIMEOUT_DETAIL")
+
+    monkeypatch.setattr(inspect_api, "parse_document_in_worker", timed_out)
+    response = client.post(
+        "/api/v1/inspect",
+        files={"file": ("draft.pdf", b"%PDF-1.4\nminimal test")},
+    )
+
+    assert response.status_code == 504
+    assert response.json()["detail"]["code"] == "parser_timeout"
+    assert "PRIVATE_TIMEOUT_DETAIL" not in response.text

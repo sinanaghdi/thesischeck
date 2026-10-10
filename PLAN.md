@@ -11,7 +11,8 @@
 - [ ] Phase 5: optional LLM provider, chapter chunking, strict structured output, evidence validation and cost estimates.
 - [ ] Phase 6: accounts, authorization, plan gates, admin rules/glossary management and mock payments.
 - [x] Phase 7 (slice 1): API request guardrails, process-local rate limiting, no-store/security headers, and sanitized unexpected processing errors.
-- [ ] Phase 7 follow-up: isolated parsing worker, trusted-edge body limits and shared rate limiting, retention/deletion workflows, fuzz/security tests, 100-page performance benchmark and production deployment acceptance.
+- [x] Phase 7 (slice 2): supervised parser subprocess with wall-clock timeout, bounded worker slots, minimal environment and platform-dependent POSIX resource limits.
+- [ ] Phase 7 follow-up: isolated container/worker identity, trusted-edge body limits and shared rate limiting, retention/deletion workflows, fuzz/security tests, 100-page performance benchmark and production deployment acceptance.
 
 ## Architecture decisions
 
@@ -32,7 +33,7 @@
 - HTML is self-contained, RTL and escaped against injected thesis text. JSON is machine-readable.
 - PDF export requires optional Playwright and installed Chromium. No font binary is bundled yet, so verify shaping on the target environment.
 - The example Mazandaran ruleset remains unverified; official formatting compliance cannot be claimed.
-- API guardrails are a local/demo baseline, not production isolation: the limiter is process-local and uploaded content still requires a resource-limited worker before public exposure.
+- API guardrails and parser subprocess supervision are a local/demo baseline, not a complete security boundary: rate limits are process-local, the child shares the host user's privileges, and public exposure still requires a sandboxed worker/container and trusted-edge controls.
 
 ## Phase 4 demo UX
 

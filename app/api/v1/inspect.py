@@ -13,8 +13,13 @@ from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
 from app.core.config import get_settings
-from app.parsing.dispatcher import parse_document
 from app.parsing.safety import DocumentParseError, DocumentValidationError
+from app.parsing.worker_client import (
+    ParserWorkerBusy,
+    ParserWorkerFailure,
+    ParserWorkerTimeout,
+    parse_document_in_worker,
+)
 from app.reports.render_html import render_html_report
 from app.reports.scoring import HealthReport, build_health_report
 from app.rules.engine import run_rules
@@ -47,7 +52,16 @@ def _process_document(
     *,
     max_size_bytes: int,
 ) -> tuple[NormalizedDocument, HealthReport]:
-    document = parse_document(filename, content, max_size_bytes=max_size_bytes)
+    settings = get_settings()
+    document = parse_document_in_worker(
+        filename,
+        content,
+        max_size_bytes=max_size_bytes,
+        timeout_seconds=settings.parser_worker_timeout_seconds,
+        cpu_seconds=settings.parser_worker_cpu_seconds,
+        memory_mb=settings.parser_worker_memory_mb,
+        concurrency=settings.parser_worker_concurrency,
+    )
     ruleset = load_ruleset(RULESET_PATH)
     checks = run_rules(document, ruleset)
     return document, build_health_report(document, checks, ruleset)
@@ -117,6 +131,31 @@ async def _read_and_process(file: UploadFile) -> tuple[NormalizedDocument, Healt
             content,
             max_size_bytes=max_bytes,
         )
+    except ParserWorkerBusy:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "parser_worker_busy",
+                "message": "ظرفیت پردازش فایل در حال حاضر تکمیل است؛ کمی بعد تلاش کنید.",
+            },
+            headers={"Retry-After": "1"},
+        ) from None
+    except ParserWorkerTimeout:
+        raise HTTPException(
+            status_code=504,
+            detail={
+                "code": "parser_timeout",
+                "message": "پردازش فایل از مهلت زمانی مجاز عبور کرد؛ فایل کوچک‌تری را امتحان کنید.",
+            },
+        ) from None
+    except ParserWorkerFailure:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "parser_unavailable",
+                "message": "پردازشگر فایل پاسخ معتبر نداد؛ کمی بعد دوباره تلاش کنید.",
+            },
+        ) from None
     except DocumentValidationError as exc:
         status_code = 413 if exc.code == "file_too_large" else 400
         raise HTTPException(

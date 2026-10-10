@@ -2,7 +2,7 @@
 
 ThesisCheck is a draft-review and format-control assistant for graduate theses. It helps identify potential formatting, citation, terminology, abstract and structure issues before supervisor review. It does not generate thesis sections for submission, fabricate references, or silently rewrite source text.
 
-> **Current status: security-guardrails slice 1 — API abuse and error hygiene.** The app accepts DOCX/PDF for in-memory inspection, runs deterministic offline checks, produces a coverage-aware provisional score, and exports JSON and self-contained RTL HTML. PDF export uses optional Playwright/Chromium.
+> **Current status: Phase 7 slice 2 — supervised parser subprocess.** The app accepts DOCX/PDF for in-memory inspection, runs deterministic offline checks, produces a coverage-aware provisional score, and exports JSON and self-contained RTL HTML. PDF export uses optional Playwright/Chromium.
 
 ## Implemented
 
@@ -19,6 +19,7 @@ ThesisCheck is a draft-review and format-control assistant for graduate theses. 
 - In-app finding filters for text, rule ID, severity and category.
 - Parsing coverage panel that displays extracted element counts and parser limitations separately from thesis-quality findings.
 - Per-process inspection/report rate limiting (configurable; default 20 requests per IP per 60 seconds), no-store API responses, baseline security headers, and sanitized unexpected errors.
+- Supervised parser subprocess with a configurable wall-clock deadline, bounded concurrent worker slots, a minimal environment, and optional POSIX CPU/address-space/file-descriptor limits.
 - Synthetic DOCX fixtures generated during tests and GitHub Actions for pytest + Ruff.
 
 ## Run locally
@@ -64,7 +65,13 @@ PDF requires the optional browser installation above.
 - `INSPECTION_RATE_LIMIT` and `INSPECTION_RATE_WINDOW_SECONDS` configure the process-local request limiter. The limiter applies to `POST /api/v1/inspect` and `POST /api/v1/report`; `429` responses include `Retry-After`. `X-Forwarded-For` is intentionally ignored because it is trustworthy only when set by a configured proxy.
 - Rate-limit state is held in process memory, so it is not shared across multiple workers or replicas. Put a shared rate limiter at the trusted reverse proxy before exposing the service publicly.
 - Inspection/report responses use `Cache-Control: no-store` and `Pragma: no-cache`; baseline `nosniff`, referrer-policy and frame-denial headers are set. Unexpected processing exceptions return a generic 500 message, while known parser failures return a controlled 422 message.
-- These guardrails do **not** make file parsing safe for unrestricted public traffic. A resource-limited isolated worker/process, request-body limits at the edge, authentication/authorization, shared rate limiting, fuzz testing, retention/deletion workflows and load testing are still required before public deployment.
+- These guardrails do **not** make file parsing safe for unrestricted public traffic. A truly isolated container/worker identity, request-body limits at the edge, authentication/authorization, shared rate limiting, fuzz testing, retention/deletion workflows and load testing are still required before public deployment.
+
+## Parser worker boundary
+
+- `PARSER_WORKER_TIMEOUT_SECONDS` defaults to 35; `PARSER_WORKER_CPU_SECONDS` defaults to 25 where POSIX CPU limits are available; `PARSER_WORKER_MEMORY_MB` defaults to 1024 where POSIX address-space limits are available; `PARSER_WORKER_CONCURRENCY` defaults to 2 per application process.
+- The worker receives the source bytes through stdin, emits a validated JSON document over stdout, runs from the system temporary directory, and does not inherit application secrets in its environment. Timeout, busy and abnormal-worker failures return controlled API errors.
+- The subprocess runs under the same OS user and can still access the host's files/network. POSIX limits are platform-dependent and Windows does not provide these `resource` limits. **This is process supervision, not a complete sandbox.** Public deployment still requires an isolated container/worker identity, no network access, secret separation, shared edge limits and resource controls at the OS/container level.
 
 ## Tests and lint
 
