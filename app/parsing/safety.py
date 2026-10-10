@@ -20,6 +20,10 @@ class DocumentValidationError(ValueError):
         return self.message
 
 
+class DocumentParseError(ValueError):
+    """A parser failure with a deliberately sanitized user-facing message."""
+
+
 _ALLOWED_EXTENSIONS = {".docx", ".pdf"}
 _PDF_HEADER = re.compile(rb"%PDF-\d\.\d")
 _REQUIRED_DOCX_ENTRIES = {"[Content_Types].xml", "word/document.xml"}

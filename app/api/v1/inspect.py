@@ -1,4 +1,4 @@
-"""Document inspection and report-export endpoints; uploads are never persisted."""
+""""Document inspection and report-export endpoints; uploads are never persisted."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from starlette.concurrency import run_in_threadpool
 
 from app.core.config import get_settings
 from app.parsing.dispatcher import parse_document
-from app.parsing.safety import DocumentValidationError
+from app.parsing.safety import DocumentParseError, DocumentValidationError
 from app.reports.render_html import render_html_report
 from app.reports.scoring import HealthReport, build_health_report
 from app.rules.engine import run_rules
@@ -123,15 +123,15 @@ async def _read_and_process(file: UploadFile) -> tuple[NormalizedDocument, Healt
             status_code=status_code,
             detail={"code": exc.code, "message": exc.message},
         ) from exc
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except DocumentParseError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from None
     except HTTPException:
         raise
-    except Exception as exc:
+    except Exception:
         raise HTTPException(
             status_code=500,
             detail="پردازش فایل یا اجرای قواعد قابل انجام نبود؛ متن سند نباید در پیام خطا ثبت شود.",
-        ) from exc
+        ) from None
     finally:
         await file.close()
 
