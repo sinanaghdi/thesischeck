@@ -14,6 +14,8 @@ def test_parser_service_has_no_host_port_and_internal_only_network() -> None:
     web = services["web"]
     assert parser.get("ports", []) == []
     assert parser["networks"] == ["parser-private"]
+    assert services["edge"]["networks"] == ["edge-exposure", "edge-private"]
+    assert "internal" not in compose["networks"]["edge-exposure"]
     assert compose["networks"]["parser-private"]["internal"] is True
     assert "parser-private" in web["networks"]
     assert "edge-private" in web["networks"]

@@ -19,6 +19,9 @@ def test_compose_profile_has_local_only_and_constrained_runtime() -> None:
     assert "no-new-privileges:true" in edge["security_opt"]
     assert edge["pids_limit"] == 64
     assert edge["mem_limit"] == "128m"
+    assert edge["ulimits"]["nofile"] == {"soft": 2048, "hard": 4096}
+    assert "edge-exposure" in edge["networks"]
+    assert "edge-private" in edge["networks"]
     assert edge["entrypoint"] == ["nginx", "-g", "daemon off;"]
     assert any(item.startswith("/run:") and "uid=101" in item for item in edge["tmpfs"])
     assert any(item.startswith("/var/cache/nginx:") and "uid=101" in item for item in edge["tmpfs"])
