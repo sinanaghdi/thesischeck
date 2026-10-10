@@ -23,8 +23,10 @@ def test_nginx_edge_limits_body_rate_connections_and_slow_clients() -> None:
 def test_edge_uses_fixed_internal_upstream_not_user_supplied_destination() -> None:
     config = (ROOT / "deploy" / "nginx.conf").read_text(encoding="utf-8")
 
-    assert config.count("proxy_pass http://web:8000;") == 3
+    assert config.count("proxy_pass http://$web_upstream;") == 3
     assert "proxy_pass $arg_" not in config
     assert "proxy_pass http://" in config
+    assert "resolver 127.0.0.11 valid=10s ipv6=off;" in config
+    assert config.count("set $web_upstream web:8000;") == 3
     assert "X-Real-IP $remote_addr" in config
     assert "X-Forwarded-For $proxy_add_x_forwarded_for" in config

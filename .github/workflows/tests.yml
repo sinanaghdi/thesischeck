@@ -50,6 +50,10 @@ jobs:
         run: docker compose config --quiet
       - name: Build and start isolated demo stack
         run: docker compose up -d --build
+      - name: Inspect startup and validate Nginx runtime configuration
+        run: |
+          docker compose ps -a
+          docker compose exec -T edge nginx -t
       - name: Wait for public edge health route
         run: |
           python - <<'PY'
@@ -58,7 +62,7 @@ jobs:
           from urllib.request import urlopen
 
           last_error = None
-          for _ in range(45):
+          for _ in range(30):
               try:
                   with urlopen("http://127.0.0.1:8000/health", timeout=2) as response:
                       payload = json.loads(response.read().decode("utf-8"))
@@ -72,8 +76,6 @@ jobs:
           else:
               raise SystemExit(f"Health check timed out: {last_error}")
           PY
-      - name: Validate Nginx runtime configuration
-        run: docker compose exec -T edge nginx -t
       - name: Generate synthetic DOCX and inspect it through Nginx
         run: |
           python - <<'PY'

@@ -14,6 +14,7 @@ services:
     tmpfs:
       - "/tmp:rw,noexec,nosuid,nodev,size=64m"
       - "/run:rw,noexec,nosuid,nodev,size=8m,uid=101,gid=101,mode=0755"
+      - "/var/cache/nginx:rw,noexec,nosuid,nodev,size=64m,uid=101,gid=101,mode=0755"
     cap_drop:
       - ALL
     security_opt:
