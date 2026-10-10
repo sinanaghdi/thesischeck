@@ -1,6 +1,5 @@
 from pathlib import Path
 
-from app.parsing.normalization import normalize_for_comparison
 from app.reports.render_html import render_html_report
 from app.reports.scoring import build_health_report
 from app.rules.engine import run_rules
