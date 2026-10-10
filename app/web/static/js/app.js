@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const form = document.querySelector("#inspect-form");
   if (!form) return;
+  setupFindingFilters();
   const fileInput = document.querySelector("#thesis-file");
   const submit = document.querySelector("#inspect-submit");
   const status = document.querySelector("#upload-status");
@@ -73,6 +74,64 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function categoryLabel(category) {
+    const labels = {
+      references: "منابع و ارجاعات",
+      terminology: "اصطلاحات",
+      abstracts: "چکیده‌ها",
+      figures_tables: "شکل‌ها و جدول‌ها",
+      structure: "ساختار",
+      formatting: "قالب‌بندی",
+      writing_quality: "کیفیت نگارش",
+    };
+    return labels[category] || "سایر";
+  }
+
+  function applyFindingFilters() {
+    const container = document.querySelector("#finding-list");
+    const search = document.querySelector("#finding-search-live");
+    const severity = document.querySelector("#finding-severity-live");
+    const category = document.querySelector("#finding-category-live");
+    const count = document.querySelector("#finding-filter-count");
+    const noMatches = document.querySelector("#finding-no-filter-matches");
+    if (!container || !search || !severity || !category) return;
+    const cards = Array.from(container.querySelectorAll(".finding-card"));
+    const query = search.value.trim().toLocaleLowerCase();
+    const selectedSeverity = severity.value;
+    const selectedCategory = category.value;
+    let visible = 0;
+    cards.forEach((card) => {
+      const searchText = (card.dataset.search || card.textContent).toLocaleLowerCase();
+      const matchesSearch = !query || searchText.includes(query);
+      const matchesSeverity = selectedSeverity === "all" || card.dataset.severity === selectedSeverity;
+      const matchesCategory = selectedCategory === "all" || card.dataset.category === selectedCategory;
+      const show = matchesSearch && matchesSeverity && matchesCategory;
+      card.hidden = !show;
+      if (show) visible += 1;
+    });
+    if (count) count.textContent = visible + " از " + cards.length + " یافته";
+    if (noMatches) noMatches.hidden = cards.length === 0 || visible > 0;
+  }
+
+  function setupFindingFilters() {
+    const search = document.querySelector("#finding-search-live");
+    const severity = document.querySelector("#finding-severity-live");
+    const category = document.querySelector("#finding-category-live");
+    const clear = document.querySelector("#clear-finding-filters");
+    [search, severity, category].forEach((control) => {
+      if (!control) return;
+      control.addEventListener(control === search ? "input" : "change", applyFindingFilters);
+    });
+    if (clear) {
+      clear.addEventListener("click", () => {
+        if (search) search.value = "";
+        if (severity) severity.value = "all";
+        if (category) category.value = "all";
+        applyFindingFilters();
+      });
+    }
+  }
+
   function renderChecks(report) {
     const coverage = document.querySelector("#check-coverage");
     coverage.textContent = report.rules_checked + " اجرا / " + report.rules_skipped + " ردشده";
@@ -100,7 +159,14 @@ document.addEventListener("DOMContentLoaded", () => {
       "در قواعد فعال، موردی برای بازبینی شناسایی نشد. این نتیجه به معنی تأیید علمی یا قالب رسمی نیست.",
       (item) => {
         const card = make("article", "finding-card finding-" + item.severity);
+        card.dataset.severity = item.severity || "info";
+        card.dataset.category = item.category || "other";
+        card.dataset.search = [
+          item.rule_id, item.title_fa, item.title_en, item.message_fa, item.message_en,
+          item.snippet, item.element_id, (item.heading_path || []).join(" "),
+        ].filter(Boolean).join(" ").toLocaleLowerCase();
         const top = make("div", "finding-top");
+        top.append(make("span", "finding-category", categoryLabel(item.category)));
         top.append(
           make("span", "finding-severity", item.severity === "error" ? "مهم" : item.severity === "warning" ? "بازبینی" : "اطلاعات"),
           make("code", "finding-rule", item.rule_id),
@@ -120,6 +186,8 @@ document.addEventListener("DOMContentLoaded", () => {
         return card;
       },
     );
+
+    applyFindingFilters();
 
     fillList(
       document.querySelector("#rule-results"),
@@ -191,6 +259,39 @@ document.addEventListener("DOMContentLoaded", () => {
       },
     );
     document.querySelector("#result-privacy").textContent = data.privacy_note;
+    const parserDiagnostics = data.diagnostics || [];
+    const parserWarnings = parserDiagnostics.filter((item) => item.severity === "warning" || item.severity === "error").length;
+    const parserStatus = document.querySelector("#parser-status-pill");
+    parserStatus.textContent = data.parsing_complete ? "استخراج اولیه انجام شد" : "استخراج ناقص";
+    parserStatus.className = "coverage-status " + (data.parsing_complete ? "is-ready" : "is-warning");
+    document.querySelector("#parser-coverage-note").textContent =
+      "این بخش کیفیت استخراج را توصیف می‌کند، نه کیفیت علمی پایان‌نامه. موارد مبهم یا پشتیبانی‌نشده باید در فایل اصلی بازبینی شوند.";
+    const coverageCards = document.querySelector("#parser-coverage-cards");
+    coverageCards.replaceChildren();
+    [
+      ["عناصر ساختاریافته", data.element_count || 0],
+      ["عنوان‌های تشخیص‌داده‌شده", (data.headings || []).length],
+      ["هشدارهای استخراج", parserWarnings],
+      ["محدودیت‌های اعلام‌شده", parserDiagnostics.length],
+    ].forEach(([label, value]) => {
+      const card = make("div", "parser-coverage-card");
+      card.append(make("small", "", label), make("strong", "", value));
+      coverageCards.append(card);
+    });
+    const parserDetails = document.querySelector("#parser-coverage-diagnostics");
+    parserDetails.replaceChildren();
+    if (parserDiagnostics.length) {
+      parserDetails.append(make("strong", "", "محدودیت‌های مهم در استخراج"));
+      const list = make("ul", "");
+      parserDiagnostics.slice(0, 4).forEach((item) => {
+        const row = make("li", "");
+        row.append(make("span", "parser-diagnostic-code", item.code), document.createTextNode(" " + item.message));
+        list.append(row);
+      });
+      parserDetails.append(list);
+    } else {
+      parserDetails.append(make("p", "", "هشدار خاصی از سوی parser ثبت نشده است؛ این به معنی تأیید همه اجزای سند نیست."));
+    }
     renderScore(data.health_report || {});
     renderChecks((data.health_report && data.health_report.checks) || { rules_checked: 0, rules_skipped: 0, findings: [], results: [] });
     results.hidden = false;

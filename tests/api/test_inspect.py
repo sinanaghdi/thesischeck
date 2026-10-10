@@ -47,6 +47,9 @@ def test_inspect_page_contains_upload_form() -> None:
     assert 'id="inspect-form"' in response.text
     assert 'id="inspect-submit"' in response.text
     assert 'data-export-format="pdf"' in response.text
+    assert 'id="finding-search-live"' in response.text
+    assert 'id="finding-severity-live"' in response.text
+    assert 'id="parser-coverage-cards"' in response.text
 
 
 def test_inspect_returns_controlled_error_for_malformed_docx_package() -> None:

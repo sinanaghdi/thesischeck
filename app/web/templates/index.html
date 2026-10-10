@@ -32,6 +32,12 @@
         </div>
         <p class="export-status" id="export-status" role="status" aria-live="polite">گزارش‌ها هنگام درخواست ساخته می‌شوند و در ذخیره‌سازی دائمی نگه داشته نمی‌شوند.</p>
       </section>
+      <section class="parser-coverage-panel" aria-label="پوشش استخراج سند">
+        <div class="parser-coverage-heading"><div><span class="eyebrow">پوشش استخراج</span><h3>چه چیزهایی از فایل خوانده شد؟</h3></div><span id="parser-status-pill" class="coverage-status">—</span></div>
+        <p id="parser-coverage-note" class="parser-coverage-note"></p>
+        <div class="parser-coverage-cards" id="parser-coverage-cards"></div>
+        <div class="parser-coverage-diagnostics" id="parser-coverage-diagnostics"></div>
+      </section>
       <div class="result-metrics" id="result-metrics"></div>
       <div class="result-columns">
         <div><h3>عنوان‌های شناسایی‌شده</h3><ol id="result-headings" class="detected-headings"></ol></div>
@@ -43,7 +49,15 @@
         <div class="results-title"><div><span class="eyebrow">بررسی‌های قطعی</span><h2>یافته‌های قابل بازبینی</h2></div><span class="results-format" id="check-coverage"></span></div>
         <p class="checks-disclaimer" id="checks-disclaimer"></p>
         <div class="check-counters" id="check-counters"></div>
+        <div class="finding-filters" role="search" aria-label="فیلتر یافته‌های گزارش">
+          <div class="finding-filter-field"><label for="finding-search-live">جست‌وجو</label><input id="finding-search-live" type="search" placeholder="متن، شناسه قاعده یا شاهد…" autocomplete="off"></div>
+          <div class="finding-filter-field"><label for="finding-severity-live">شدت</label><select id="finding-severity-live"><option value="all">همه شدت‌ها</option><option value="error">مهم</option><option value="warning">نیازمند بازبینی</option><option value="info">اطلاعات</option></select></div>
+          <div class="finding-filter-field"><label for="finding-category-live">دسته</label><select id="finding-category-live"><option value="all">همه دسته‌ها</option><option value="references">منابع و ارجاعات</option><option value="terminology">اصطلاحات</option><option value="abstracts">چکیده‌ها</option><option value="figures_tables">شکل‌ها و جدول‌ها</option><option value="structure">ساختار</option><option value="formatting">قالب‌بندی</option></select></div>
+          <button type="button" class="filter-reset" id="clear-finding-filters">پاک‌کردن فیلترها</button>
+          <span id="finding-filter-count" class="finding-filter-count" role="status" aria-live="polite">۰ یافته</span>
+        </div>
         <div class="finding-list" id="finding-list"></div>
+        <p class="filter-empty-state" id="finding-no-filter-matches" hidden>یافته‌ای با این فیلترها پیدا نشد.</p>
         <details class="rule-details"><summary>وضعیت قواعد اجراشده و ردشده</summary><div id="rule-results"></div></details>
       </section>
     </section>
