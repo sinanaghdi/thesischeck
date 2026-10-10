@@ -4,37 +4,29 @@
 
 - [x] Phase 0: foundation, normalization, rule schema/loader, basic UI, health endpoint, synthetic fixture generator, tests and CI.
 - [x] Phase 1: safe upload validation, DOCX/PDF parsing, normalized document model, parser diagnostics and inspection-summary API.
-- [ ] Phase 1 acceptance follow-up: isolate parsing in a restricted worker and add deeper malformed-file/resource-exhaustion tests before public deployment.
-- [ ] Phase 2: deterministic rule engine, references, terminology, abstracts, figure/table, formatting and structure checks.
-- [ ] Phase 3: report schema, transparent scoring, prioritization, HTML/JSON/PDF export.
-- [ ] Phase 4: polished Persian-first demo flow and detailed report screens.
-- [ ] Phase 5: optional LLM provider, chunking, strict structured outputs and evidence verification.
+- [x] Phase 2: initial deterministic rule registry, reference/citation heuristics, editable terminology glossary, abstract checks, figure/table cross-reference checks, heading hierarchy hints and report findings in the UI.
+- [ ] Phase 2 follow-up: broaden citation-style fixtures, add adversarial parser resource tests, verify no unintended source text is logged, and improve checker confidence calibration.
+- [ ] Phase 3: explainable health scoring, HTML/JSON/PDF report exports and issue prioritization.
+- [ ] Phase 4: polished professor-demo report screens and parsing-coverage UX.
+- [ ] Phase 5: optional LLM provider, chunking, structured outputs and evidence verification.
 - [ ] Phase 6: accounts, authorization, plan gates, admin rule/glossary management and mock payments.
-- [ ] Phase 7: security/fuzz testing, 100-page performance benchmark and deployment acceptance.
+- [ ] Phase 7: isolated parsing worker, fuzz/security tests, 100-page performance benchmark and deployment acceptance.
 
 ## Architecture decisions
 
 - FastAPI + Jinja2 + locally hosted CSS/JavaScript.
 - SQLAlchemy 2.x + Alembic; SQLite initially, configurable URL for PostgreSQL.
-- A separate persistent database-backed analysis worker before introducing Redis/Celery.
-- DOCX: python-docx plus lxml/OOXML for headings, paragraph/table order, selected run formatting, complex-script font attributes, section setup and header/footer page fields. PDF: pdfplumber text extraction, with OCR unavailable initially.
+- A separate persistent database-backed worker before introducing Redis/Celery.
+- DOCX: python-docx plus lxml/OOXML; PDF: pdfplumber text extraction, OCR unavailable initially.
 - NLP: Unicode normalization, regex and rapidfuzz; avoid heavier dependencies unless demonstrated useful.
-- AI: provider abstraction, off by default, mock provider for tests.
+- Deterministic rules are offline by default. Any AI work must be optional and provider-swappable.
 - PDF report: Playwright/Chromium with a bundled licensed Persian-capable font, followed by RTL visual tests.
 
-## Phase 1 acceptance results
+## Phase 2 guarantees and limits
 
-- Extension/signature/size checks reject unsupported and malformed uploads.
-- DOCM and macro-marked DOCX packages are rejected.
-- DOCX parsing preserves body-level paragraph/table order and supplies source element IDs, heading paths, run hints, section setup and parser diagnostics.
-- PDF parsing provides page locations and explicit warnings for missing text layer and unavailable DOCX-level formatting checks.
-- The API returns a bounded summary (up to 50 headings and five short text previews), not the complete extracted document.
-- Upload data is processed in memory by the inspection endpoint, is not persistently saved, and is not sent to an LLM.
-- The current suite has 24 passing tests in the local run. CI is the merge gate for the branch.
-
-## Known limits
-
-- No actual official Mazandaran thesis guideline has been supplied.
-- A synchronous inspection endpoint exists; a restricted worker, authentication, persistent jobs, retention/deletion workflows, rate limiting, full reporting and payments are not implemented yet.
-- No font binary is bundled until license and PDF shaping are validated.
-- Scanned PDF OCR, DOCX page-number mapping, footnote/endnote extraction and complex drawing/equation interpretation remain unavailable or partial.
+- Rule sets are schema-validated and checker names resolve through an allowlisted registry, not dynamic imports.
+- Per-rule state distinguishes passed, issue(s) found, and skipped/unconfigured.
+- Findings have a source element ID and/or short quoted evidence, localized explanation/fix, category, severity and confidence.
+- Citation/reference parsing is heuristic and offline. Probable duplicates and mismatches require human review; the system never fabricates bibliography data.
+- The example Mazandaran profile remains unverified. Rules requiring official fonts, margins, spacing or required-heading lists stay disabled/skipped until properly configured.
+- A passed check is not proof of academic or university compliance. Overall score and report exports are not implemented yet.

@@ -27,7 +27,9 @@ def test_inspect_returns_summary_without_full_document_text() -> None:
     assert body["source_format"] == "docx"
     assert body["element_count"] > 0
     assert body["headings"]
-    assert "عناصر شناسایی" not in response.text
+    assert body["checks"]["ruleset_verified"] is False
+    assert body["checks"]["rules_checked"] > 0
+    assert body["checks"]["findings"]
     assert "privacy_note" in body
 
 

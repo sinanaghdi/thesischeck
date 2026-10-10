@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function fillList(container, items, emptyText, renderItem) {
     container.replaceChildren();
     if (!items || items.length === 0) {
-      container.append(make("li", "empty-state", emptyText));
+      container.append(make("p", "empty-state", emptyText));
       return;
     }
     items.forEach((item) => container.append(renderItem(item)));
@@ -40,6 +40,68 @@ document.addEventListener("DOMContentLoaded", () => {
     results.hidden = true;
     status.className = "upload-status is-error";
     status.textContent = message;
+  }
+
+  function renderChecks(report) {
+    const coverage = document.querySelector("#check-coverage");
+    coverage.textContent = report.rules_checked + " اجرا / " + report.rules_skipped + " ردشده";
+    document.querySelector("#checks-disclaimer").textContent =
+      (report.disclaimer_fa || "") + " · امتیاز سلامت هنوز پیاده‌سازی نشده است؛ این موارد نتیجه‌های بازبینی هستند، نه حکم قطعی.";
+    const counters = document.querySelector("#check-counters");
+    counters.replaceChildren();
+    const severityCount = { error: 0, warning: 0, info: 0 };
+    (report.findings || []).forEach((item) => {
+      if (Object.prototype.hasOwnProperty.call(severityCount, item.severity)) severityCount[item.severity] += 1;
+    });
+    [
+      ["موارد مهم", severityCount.error, "error"],
+      ["نیازمند بازبینی", severityCount.warning, "warning"],
+      ["اطلاعات", severityCount.info, "info"],
+    ].forEach(([title, count, severity]) => {
+      const card = make("div", "check-counter counter-" + severity);
+      card.append(make("small", "", title), make("strong", "", count));
+      counters.append(card);
+    });
+
+    fillList(
+      document.querySelector("#finding-list"),
+      report.findings || [],
+      "در قواعد فعال، موردی برای بازبینی شناسایی نشد. این نتیجه به معنی تأیید علمی یا قالب رسمی نیست.",
+      (item) => {
+        const card = make("article", "finding-card finding-" + item.severity);
+        const top = make("div", "finding-top");
+        top.append(
+          make("span", "finding-severity", item.severity === "error" ? "مهم" : item.severity === "warning" ? "بازبینی" : "اطلاعات"),
+          make("code", "finding-rule", item.rule_id),
+          make("span", "finding-confidence", "اطمینان " + Math.round(item.confidence * 100) + "%"),
+        );
+        const title = make("h3", "", item.title_fa);
+        const message = make("p", "finding-message", item.message_fa);
+        card.append(top, title, message);
+        if (item.snippet) {
+          const quote = make("blockquote", "finding-snippet");
+          quote.append(make("small", "", "شاهد از سند"), make("p", "", item.snippet));
+          card.append(quote);
+        }
+        const place = [item.element_id, (item.heading_path || []).join(" ← "), item.page_number ? "صفحه " + item.page_number : ""].filter(Boolean).join(" · ");
+        if (place) card.append(make("p", "finding-location", place));
+        card.append(make("p", "finding-fix", item.suggested_fix_fa));
+        return card;
+      },
+    );
+
+    fillList(
+      document.querySelector("#rule-results"),
+      report.results || [],
+      "وضعیت قواعد موجود نیست.",
+      (item) => {
+        const row = make("div", "rule-result rule-" + item.status);
+        const title = make("strong", "", item.title_fa);
+        const badge = make("span", "rule-status", item.status === "passed" ? "بدون مورد" : item.status === "issues_found" ? "یافته دارد" : "رد شد");
+        row.append(title, badge, make("p", "", item.note_fa));
+        return row;
+      },
+    );
   }
 
   function renderSummary(data) {
@@ -98,9 +160,10 @@ document.addEventListener("DOMContentLoaded", () => {
       },
     );
     document.querySelector("#result-privacy").textContent = data.privacy_note;
+    renderChecks(data.checks || { rules_checked: 0, rules_skipped: 0, findings: [], results: [] });
     results.hidden = false;
     status.className = "upload-status is-success";
-    status.textContent = "استخراج اولیه انجام شد. این گزارش فقط خلاصه parser است و هنوز بررسی علمی یا قالب‌بندی نهایی انجام نمی‌دهد.";
+    status.textContent = "استخراج و بررسی‌های قطعی انجام شد. یافته‌ها ابتکاری‌اند و باید با سند اصلی بازبینی شوند؛ AI و امتیازدهی هنوز فعال نیستند.";
   }
 
   form.addEventListener("submit", async (event) => {
@@ -125,7 +188,7 @@ document.addEventListener("DOMContentLoaded", () => {
     submit.disabled = true;
     submit.textContent = "در حال بررسی…";
     status.className = "upload-status";
-    status.textContent = "فایل در حال اعتبارسنجی و استخراج ساختار است. متن کامل به این صفحه بازگردانده نمی‌شود.";
+    status.textContent = "فایل در حال اعتبارسنجی، استخراج ساختار و اجرای قواعد قطعی است.";
     results.hidden = true;
     try {
       const response = await fetch("/api/v1/inspect", { method: "POST", body: formData });

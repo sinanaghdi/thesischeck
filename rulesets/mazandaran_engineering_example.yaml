@@ -2,14 +2,13 @@ metadata:
   name: "University of Mazandaran — Faculty of Engineering — EXAMPLE ONLY"
   university: "University of Mazandaran (unverified profile)"
   faculty: "Faculty of Engineering / Computer Engineering (example)"
-  version: "0.1.0-example"
+  version: "0.2.0-example"
   status: "example_unverified"
   official_guideline_verified: false
   warning:
     fa: "هشدار مهم: این مجموعه قوانین نمونه و تأییدنشده است. هیچ مقدار قلم، حاشیه، فاصله خطوط، صفحه‌بندی یا ترتیب صفحات، قانون رسمی دانشگاه مازندران نیست. پیش از استفاده واقعی، آن را با شیوه‌نامه رسمی و تأییدشده جایگزین کنید."
     en: "IMPORTANT: This is an unverified example ruleset. No font, margin, line-spacing, pagination, or front-matter value here is an official University of Mazandaran rule. Replace and verify against the official guideline before real use."
 
-# Product scoring defaults, not university policy.
 scoring_weights:
   formatting_structure: 25
   references_citations: 20
@@ -46,8 +45,8 @@ rules:
     parameters:
       top_cm: null
       bottom_cm: null
-      inside_cm: null
-      outside_cm: null
+      left_cm: null
+      right_cm: null
     explanation:
       fa: "حاشیه‌های صفحه باید با مقادیر تأییدشده مقایسه شوند؛ در حال حاضر مقدار رسمی وارد نشده است."
       en: "Page margins should be compared with verified values; official values have not been supplied."
@@ -86,18 +85,112 @@ rules:
       fa: "بخش‌های چکیده را بررسی کنید؛ تشخیص خودکار ممکن است نیازمند تأیید کاربر باشد."
       en: "Review the abstract sections; automatic detection may need user confirmation."
 
+  - id: ABSTRACT_CONSISTENCY
+    title:
+      fa: "سازگاری ساختاری دو چکیده"
+      en: "Bilingual abstract consistency"
+    severity: warning
+    checker: abstract_consistency
+    enabled: true
+    parameters:
+      minimum_length_ratio: 0.45
+    explanation:
+      fa: "تعداد کلیدواژه‌ها، طول تقریبی و برخی اختلاف‌های عددی دو چکیده مقایسه می‌شود؛ این بررسی معنایی کامل نیست."
+      en: "Keyword counts, approximate length, and some numeric differences are compared; this is not full semantic verification."
+    how_to_fix:
+      fa: "اختلاف‌های شناسایی‌شده را در متن اصلی و با توجه به معنا بررسی کنید."
+      en: "Review detected differences against the source text and intended meaning."
+
   - id: REFERENCES_PARSING_NOTICE
     title:
-      fa: "بازبینی فهرست منابع"
-      en: "Reference-list review"
+      fa: "بازبینی ساختار فهرست منابع"
+      en: "Reference-list structure review"
     severity: info
     checker: reference_parse_diagnostics
     enabled: true
+    parameters: {}
+    explanation:
+      fa: "ساختار منابع با روش‌های ابتکاری شناسایی می‌شود و راستی‌آزمایی واقعی منبع نیست."
+      en: "Reference structure is detected heuristically and does not verify that a source is real."
+    how_to_fix:
+      fa: "موارد مبهم را با منبع اصلی تطبیق دهید؛ اطلاعات غیرقابل بررسی باید مشخص بماند."
+      en: "Verify ambiguous entries against originals and keep unverifiable information clearly marked."
+
+  - id: REFERENCES_CROSSCHECK
+    title:
+      fa: "تطبیق ارجاع‌های متن و فهرست منابع"
+      en: "In-text citation/reference cross-check"
+    severity: warning
+    checker: reference_consistency
+    enabled: true
     parameters:
       fuzzy_duplicate_threshold: 92
+      mixed_style_min_ratio: 0.15
     explanation:
-      fa: "ساختار منابع با روش‌های ابتکاری شناسایی می‌شود و نتیجه، راستی‌آزمایی واقعی منبع نیست."
-      en: "Reference structure is detected heuristically; this does not verify that a source is real."
+      fa: "ارجاع‌های عددی، شماره‌گذاری و شباهت مدخل‌ها با روش‌های قطعی و ابتکاری مقایسه می‌شوند؛ قالب‌های پیچیده ممکن است مبهم باشند."
+      en: "Numeric citations, numbering, and entry similarity are checked heuristically; complex formats may remain ambiguous."
     how_to_fix:
-      fa: "موارد مبهم را با منبع اصلی تطبیق دهید؛ موارد غیرقابل بررسی با صراحت مشخص می‌شوند."
-      en: "Verify ambiguous entries against original sources; unverifiable items will be marked explicitly."
+      fa: "شماره‌ها و مدخل‌های گزارش‌شده را در متن و فهرست اصلی دستی بررسی کنید."
+      en: "Manually verify flagged citation numbers and entries in the source document."
+
+  - id: TERMINOLOGY_CONSISTENCY
+    title:
+      fa: "یکدستی معادل‌های اصطلاحات"
+      en: "Terminology consistency"
+    severity: warning
+    checker: terminology_consistency
+    enabled: true
+    parameters:
+      glossary_path: "glossary/terms_seed.csv"
+    explanation:
+      fa: "صورت‌های واژگانی موجود در واژه‌نامه قابل ویرایش بررسی می‌شوند؛ پیشنهاد واژه‌نامه استاندارد قطعی نیست."
+      en: "Variants in the editable glossary are checked; canonical suggestions are not authoritative."
+    how_to_fix:
+      fa: "معادل پیشنهادی را با توجه به زمینه علمی تأیید کنید و واژه‌نامه را در صورت نیاز ویرایش کنید."
+      en: "Confirm a suggested equivalent in scientific context and edit the glossary where needed."
+
+  - id: FIGURE_TABLE_CROSSCHECK
+    title:
+      fa: "شماره‌گذاری و ارجاع شکل‌ها و جدول‌ها"
+      en: "Figure/table numbering and cross-references"
+    severity: warning
+    checker: figure_table_consistency
+    enabled: true
+    parameters: {}
+    explanation:
+      fa: "تکرار احتمالی شماره، ارجاع بدون کپشن و کپشن بدون ارجاع شناسایی می‌شود."
+      en: "Possible duplicate numbers, dangling references, and unreferenced captions are detected."
+    how_to_fix:
+      fa: "شماره‌ها و ارجاع‌ها را در سند اصلی بررسی کنید؛ استخراج PDF ممکن است ناقص باشد."
+      en: "Verify numbering and cross-references in the source; PDF extraction may be incomplete."
+
+  - id: STRUCTURE_HEADING_HIERARCHY
+    title:
+      fa: "بررسی سلسله‌مراتب عنوان‌ها"
+      en: "Heading hierarchy review"
+    severity: info
+    checker: heading_hierarchy
+    enabled: true
+    parameters: {}
+    explanation:
+      fa: "پرش در سطح عنوان‌ها به‌عنوان نشانه‌ای برای بازبینی بررسی می‌شود، نه الزام رسمی."
+      en: "Heading-level jumps are flagged as review hints, not official requirements."
+    how_to_fix:
+      fa: "سبک‌های عنوان را در Word بررسی کنید؛ ممکن است تفاوت سطح عمدی باشد."
+      en: "Review heading styles in Word; some level differences may be intentional."
+
+  - id: STRUCTURE_REQUIRED_HEADINGS
+    title:
+      fa: "وجود عنوان‌های الزامی"
+      en: "Required heading presence"
+    severity: warning
+    checker: required_sections
+    enabled: true
+    parameters:
+      required_headings: ""
+    explanation:
+      fa: "فقط عنوان‌های مشخص‌شده توسط مدیر در قواعد بررسی می‌شوند؛ فهرست رسمی هنوز تنظیم نشده است."
+      en: "Only administrator-configured headings are checked; the official list is not configured yet."
+    how_to_fix:
+      fa: "عنوان‌های الزامی را پس از دریافت شیوه‌نامه رسمی تنظیم کنید."
+      en: "Configure required headings after obtaining the official guideline."
