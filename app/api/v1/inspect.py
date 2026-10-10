@@ -1,4 +1,4 @@
-""""Document inspection and report-export endpoints; uploads are never persisted."""
+"""Document inspection and report-export endpoints; uploads are never persisted."""
 
 from __future__ import annotations
 

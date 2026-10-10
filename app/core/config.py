@@ -1,4 +1,4 @@
-""""Environment-backed configuration. Secrets must be supplied at deployment time."""
+"""Environment-backed configuration. Secrets must be supplied at deployment time."""
 
 from functools import lru_cache
 

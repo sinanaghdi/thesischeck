@@ -1,4 +1,4 @@
-""""FastAPI entry point for the ThesisCheck API and Persian-first interface."""
+"""FastAPI entry point for the ThesisCheck API and Persian-first interface."""
 
 from pathlib import Path
 
