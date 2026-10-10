@@ -1,1 +1,31 @@
-\"\"\"Conservative Persian/Arabic character normalization for comparisons.\n\nThe source text should always be retained separately. These helpers produce a\ncomparison form and are not intended to rewrite a student's document.\n\"\"\"\n\nimport re\nimport unicodedata\n\n_ARABIC_TO_PERSIAN = str.maketrans({\"\\u064a\": \"\\u06cc\", \"\\u0649\": \"\\u06cc\", \"\\u0643\": \"\\u06a9\"})\n_PERSIAN_DIGITS = \"۰۱۲۳۴۵۶۷۸۹\"\n_ARABIC_DIGITS = \"٠١٢٣٤٥٦٧٨٩\"\n_LATIN_DIGITS = \"0123456789\"\n_DIGIT_TRANSLATION = str.maketrans(\n    {**dict(zip(_PERSIAN_DIGITS, _LATIN_DIGITS)), **dict(zip(_ARABIC_DIGITS, _LATIN_DIGITS))}\n)\n_WHITESPACE = re.compile(r\"[\\t\\r\\n ]+\")\n\n\ndef normalize_persian_text(text: str, *, latin_digits: bool = True) -> str:\n    \"\"\"Normalize Unicode, Arabic yeh/kaf and optionally digits for comparison.\"\"\"\n    value = unicodedata.normalize(\"NFC\", text).translate(_ARABIC_TO_PERSIAN)\n    if latin_digits:\n        value = value.translate(_DIGIT_TRANSLATION)\n    value = re.sub(\"\\u200c{2,}\", \"\\u200c\", value)\n    return value\n\n\ndef normalize_for_comparison(text: str) -> str:\n    \"\"\"Normalize Persian variants and collapse whitespace without removing ZWNJ.\"\"\"\n    return _WHITESPACE.sub(\" \", normalize_persian_text(text)).strip()\n
+"""Conservative Persian/Arabic normalization for comparisons.
+
+Source text must be retained separately; these functions never rewrite the original.
+"""
+
+import re
+import unicodedata
+
+_ARABIC_TO_PERSIAN = str.maketrans({"ي": "ی", "ى": "ی", "ك": "ک"})
+_PERSIAN_DIGITS = "۰۱۲۳۴۵۶۷۸۹"
+_ARABIC_DIGITS = "٠١٢٣٤٥٦٧٨٩"
+_LATIN_DIGITS = "0123456789"
+_DIGIT_TRANSLATION = str.maketrans(
+    {**dict(zip(_PERSIAN_DIGITS, _LATIN_DIGITS)), **dict(zip(_ARABIC_DIGITS, _LATIN_DIGITS))}
+)
+_WHITESPACE = re.compile(r"[\t\r\n ]+")
+
+
+def normalize_persian_text(text: str, *, latin_digits: bool = True) -> str:
+    """Normalize Unicode, Arabic yeh/kaf and optionally digits for comparison."""
+    value = unicodedata.normalize("NFC", text).translate(_ARABIC_TO_PERSIAN)
+    if latin_digits:
+        value = value.translate(_DIGIT_TRANSLATION)
+    # Keep one ZWNJ when several were accidentally repeated.
+    value = re.sub("\u200c{2,}", "\u200c", value)
+    return value
+
+
+def normalize_for_comparison(text: str) -> str:
+    """Normalize Persian variants and collapse whitespace without removing ZWNJ."""
+    return _WHITESPACE.sub(" ", normalize_persian_text(text)).strip()

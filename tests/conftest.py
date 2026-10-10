@@ -1,1 +1,8 @@
-from pathlib import Path\n\nimport pytest\n\n\n@pytest.fixture\ndef project_root() -> Path:\n    return Path(__file__).resolve().parents[1]\n
+from pathlib import Path
+
+import pytest
+
+
+@pytest.fixture
+def project_root() -> Path:
+    return Path(__file__).resolve().parents[1]

@@ -1,1 +1,1 @@
-\"\"\"Application configuration and cross-cutting concerns.\"\"\"\n
+"""Application configuration and cross-cutting concerns."""

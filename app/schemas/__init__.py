@@ -1,1 +1,1 @@
-\"\"\"API and normalized-document schemas.\"\"\"\n
+"""API and normalized-document schemas."""

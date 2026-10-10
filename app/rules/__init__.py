@@ -1,1 +1,1 @@
-\"\"\"Configurable ruleset schema, loading and deterministic checkers.\"\"\"\n
+"""Configurable ruleset schema, loading and deterministic checkers."""

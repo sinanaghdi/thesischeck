@@ -1,1 +1,1 @@
-\"\"\"ThesisCheck application package.\"\"\"\n
+"""ThesisCheck application package."""

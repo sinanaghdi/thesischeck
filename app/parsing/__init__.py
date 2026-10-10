@@ -1,1 +1,1 @@
-\"\"\"Document parsers and normalization utilities.\"\"\"\n
+"""Document parsers and normalization utilities."""

@@ -1,1 +1,39 @@
-\"\"\"Initial normalized document data structures; parser fills these in later.\"\"\"\n\nfrom typing import Literal\n\nfrom pydantic import BaseModel, ConfigDict, Field\n\n\nclass ParseDiagnostic(BaseModel):\n    model_config = ConfigDict(extra=\"forbid\")\n\n    code: str\n    message: str\n    severity: Literal[\"info\", \"warning\", \"error\"] = \"warning\"\n    element_id: str | None = None\n\n\nclass DocumentElement(BaseModel):\n    model_config = ConfigDict(extra=\"forbid\")\n\n    element_id: str\n    kind: Literal[\"heading\", \"paragraph\", \"table\", \"figure\", \"equation\", \"code\", \"unknown\"]\n    text: str = \"\"\n    normalized_text: str = \"\"\n    heading_level: int | None = Field(default=None, ge=1, le=9)\n    heading_path: list[str] = Field(default_factory=list)\n    page_number: int | None = Field(default=None, ge=1)\n    source_index: int = Field(ge=0)\n    metadata: dict[str, str | int | float | bool | None] = Field(default_factory=dict)\n\n\nclass NormalizedDocument(BaseModel):\n    model_config = ConfigDict(extra=\"forbid\")\n\n    source_format: Literal[\"docx\", \"pdf\"]\n    file_name: str\n    elements: list[DocumentElement] = Field(default_factory=list)\n    diagnostics: list[ParseDiagnostic] = Field(default_factory=list)\n    page_count: int | None = Field(default=None, ge=1)\n    parsing_complete: bool = False\n
+"""Initial normalized document data structures; parser fills these in later."""
+
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class ParseDiagnostic(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: str
+    message: str
+    severity: Literal["info", "warning", "error"] = "warning"
+    element_id: str | None = None
+
+
+class DocumentElement(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    element_id: str
+    kind: Literal["heading", "paragraph", "table", "figure", "equation", "code", "unknown"]
+    text: str = ""
+    normalized_text: str = ""
+    heading_level: int | None = Field(default=None, ge=1, le=9)
+    heading_path: list[str] = Field(default_factory=list)
+    page_number: int | None = Field(default=None, ge=1)
+    source_index: int = Field(ge=0)
+    metadata: dict[str, str | int | float | bool | None] = Field(default_factory=dict)
+
+
+class NormalizedDocument(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source_format: Literal["docx", "pdf"]
+    file_name: str
+    elements: list[DocumentElement] = Field(default_factory=list)
+    diagnostics: list[ParseDiagnostic] = Field(default_factory=list)
+    page_count: int | None = Field(default=None, ge=1)
+    parsing_complete: bool = False

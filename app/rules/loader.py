@@ -1,1 +1,18 @@
-\"\"\"Safe YAML ruleset loader. The checker field is data, never a Python import path.\"\"\"\n\nfrom pathlib import Path\n\nimport yaml\n\nfrom app.rules.schemas import RuleSet\n\n\ndef load_ruleset(path: str | Path) -> RuleSet:\n    \"\"\"Load and validate a ruleset from YAML.\"\"\"\n    ruleset_path = Path(path)\n    with ruleset_path.open(\"r\", encoding=\"utf-8\") as handle:\n        raw = yaml.safe_load(handle)\n    if not isinstance(raw, dict):\n        raise ValueError(\"Ruleset root must be a YAML mapping\")\n    ruleset = RuleSet.model_validate(raw)\n    return ruleset.validate_scoring_weights()\n
+"""Safe YAML ruleset loader. The checker field is data, never a Python import path."""
+
+from pathlib import Path
+
+import yaml
+
+from app.rules.schemas import RuleSet
+
+
+def load_ruleset(path: str | Path) -> RuleSet:
+    """Load and validate a ruleset from YAML."""
+    ruleset_path = Path(path)
+    with ruleset_path.open("r", encoding="utf-8") as handle:
+        raw = yaml.safe_load(handle)
+    if not isinstance(raw, dict):
+        raise ValueError("Ruleset root must be a YAML mapping")
+    ruleset = RuleSet.model_validate(raw)
+    return ruleset.validate_scoring_weights()

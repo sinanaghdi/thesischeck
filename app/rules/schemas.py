@@ -1,1 +1,60 @@
-\"\"\"Pydantic schemas for validated ruleset configuration.\"\"\"\n\nfrom typing import Literal\n\nfrom pydantic import BaseModel, ConfigDict, Field\n\n\nclass LocalizedText(BaseModel):\n    model_config = ConfigDict(extra=\"forbid\")\n\n    fa: str\n    en: str\n\n\nclass RuleDefinition(BaseModel):\n    model_config = ConfigDict(extra=\"forbid\")\n\n    id: str = Field(pattern=r\"^[A-Z][A-Z0-9_]{2,63}$\")\n    title: LocalizedText\n    severity: Literal[\"error\", \"warning\", \"info\"]\n    checker: str\n    enabled: bool = True\n    parameters: dict[str, str | int | float | bool | None] = Field(default_factory=dict)\n    explanation: LocalizedText\n    how_to_fix: LocalizedText\n\n\nclass RuleSetMetadata(BaseModel):\n    model_config = ConfigDict(extra=\"forbid\")\n\n    name: str\n    university: str\n    faculty: str\n    version: str\n    status: Literal[\"example_unverified\", \"verified\"]\n    official_guideline_verified: bool\n    warning: LocalizedText\n\n\nclass RuleSet(BaseModel):\n    model_config = ConfigDict(extra=\"forbid\")\n\n    metadata: RuleSetMetadata\n    scoring_weights: dict[str, float]\n    rules: list[RuleDefinition]\n\n    def validate_scoring_weights(self) -> \"RuleSet\":\n        \"\"\"Validate weights without implying that they are university policy.\"\"\"\n        if any(value < 0 for value in self.scoring_weights.values()):\n            raise ValueError(\"Scoring weights must be non-negative\")\n        if self.scoring_weights and abs(sum(self.scoring_weights.values()) - 100.0) > 0.01:\n            raise ValueError(\"Scoring weights must sum to 100\")\n        ids = [rule.id for rule in self.rules]\n        if len(ids) != len(set(ids)):\n            raise ValueError(\"Rule IDs must be unique\")\n        if self.metadata.status == \"verified\" and not self.metadata.official_guideline_verified:\n            raise ValueError(\"A verified ruleset must declare official guideline verification\")\n        if self.metadata.status == \"example_unverified\" and self.metadata.official_guideline_verified:\n            raise ValueError(\"An example-unverified ruleset cannot claim official verification\")\n        return self\n
+"""Pydantic schemas for validated ruleset configuration."""
+
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class LocalizedText(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    fa: str
+    en: str
+
+
+class RuleDefinition(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(pattern=r"^[A-Z][A-Z0-9_]{2,63}$")
+    title: LocalizedText
+    severity: Literal["error", "warning", "info"]
+    checker: str
+    enabled: bool = True
+    parameters: dict[str, str | int | float | bool | None] = Field(default_factory=dict)
+    explanation: LocalizedText
+    how_to_fix: LocalizedText
+
+
+class RuleSetMetadata(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    university: str
+    faculty: str
+    version: str
+    status: Literal["example_unverified", "verified"]
+    official_guideline_verified: bool
+    warning: LocalizedText
+
+
+class RuleSet(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    metadata: RuleSetMetadata
+    scoring_weights: dict[str, float]
+    rules: list[RuleDefinition]
+
+    def validate_scoring_weights(self) -> "RuleSet":
+        """Validate weights without implying that they are university policy."""
+        if any(value < 0 for value in self.scoring_weights.values()):
+            raise ValueError("Scoring weights must be non-negative")
+        if self.scoring_weights and abs(sum(self.scoring_weights.values()) - 100.0) > 0.01:
+            raise ValueError("Scoring weights must sum to 100")
+        ids = [rule.id for rule in self.rules]
+        if len(ids) != len(set(ids)):
+            raise ValueError("Rule IDs must be unique")
+        if self.metadata.status == "verified" and not self.metadata.official_guideline_verified:
+            raise ValueError("A verified ruleset must declare official guideline verification")
+        if self.metadata.status == "example_unverified" and self.metadata.official_guideline_verified:
+            raise ValueError("An example-unverified ruleset cannot claim official verification")
+        return self

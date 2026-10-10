@@ -1,1 +1,30 @@
-\"\"\"Environment-backed configuration. Secrets must be supplied at deployment time.\"\"\"\n\nfrom functools import lru_cache\n\nfrom pydantic import Field\nfrom pydantic_settings import BaseSettings, SettingsConfigDict\n\n\nclass Settings(BaseSettings):\n    model_config = SettingsConfigDict(extra=\"ignore\", case_sensitive=False)\n\n    app_name: str = \"ThesisCheck\"\n    app_env: str = \"development\"\n    debug: bool = False\n    database_url: str = \"sqlite:///./data/thesischeck.db\"\n    max_upload_mb: int = Field(default=30, ge=1, le=100)\n    file_retention_days: int = Field(default=7, ge=1, le=365)\n    llm_mode: str = \"off\"\n    llm_base_url: str | None = None\n    llm_api_key: str | None = None\n    llm_model: str | None = None\n    llm_max_tokens_per_job: int = Field(default=12000, ge=0, le=100000)\n    jwt_secret: str = \"development-only-change-me\"\n    cors_origins: str = \"http://127.0.0.1:8000,http://localhost:8000\"\n\n\n@lru_cache(maxsize=1)\ndef get_settings() -> Settings:\n    \"\"\"Return cached process settings.\"\"\"\n    return Settings()\n
+"""Environment-backed configuration. Secrets must be supplied at deployment time."""
+
+from functools import lru_cache
+
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(extra="ignore", case_sensitive=False)
+
+    app_name: str = "ThesisCheck"
+    app_env: str = "development"
+    debug: bool = False
+    database_url: str = "sqlite:///./data/thesischeck.db"
+    max_upload_mb: int = Field(default=30, ge=1, le=100)
+    file_retention_days: int = Field(default=7, ge=1, le=365)
+    llm_mode: str = "off"
+    llm_base_url: str | None = None
+    llm_api_key: str | None = None
+    llm_model: str | None = None
+    llm_max_tokens_per_job: int = Field(default=12000, ge=0, le=100000)
+    jwt_secret: str = "development-only-change-me"
+    cors_origins: str = "http://127.0.0.1:8000,http://localhost:8000"
+
+
+@lru_cache(maxsize=1)
+def get_settings() -> Settings:
+    """Return cached process settings."""
+    return Settings()
