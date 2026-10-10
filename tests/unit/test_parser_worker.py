@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from app.parsing.safety import DocumentValidationError
 from app.parsing import worker_client
+from app.parsing.safety import DocumentValidationError
 
 
 ROOT = Path(__file__).resolve().parents[2]
