@@ -1,6 +1,6 @@
-"""Initial normalized document data structures; parser fills these in later."""
+"""Normalized document model populated by the DOCX/PDF parsers."""
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -25,7 +25,7 @@ class DocumentElement(BaseModel):
     heading_path: list[str] = Field(default_factory=list)
     page_number: int | None = Field(default=None, ge=1)
     source_index: int = Field(ge=0)
-    metadata: dict[str, str | int | float | bool | None] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class NormalizedDocument(BaseModel):
@@ -37,3 +37,4 @@ class NormalizedDocument(BaseModel):
     diagnostics: list[ParseDiagnostic] = Field(default_factory=list)
     page_count: int | None = Field(default=None, ge=1)
     parsing_complete: bool = False
+    format_metadata: dict[str, Any] = Field(default_factory=dict)

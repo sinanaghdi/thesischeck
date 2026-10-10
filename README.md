@@ -1,17 +1,27 @@
-# ThesisCheck — Phase 0 Foundation
+# ThesisCheck — Persian-first thesis review
 
-ThesisCheck (working name; Persian name candidate: **PayanNegar / پایان‌نگار**) is a Persian-first writing-quality and format-control assistant for graduate theses. It helps students find consistency, formatting, citation, and structure issues before supervisor review. It does not write thesis sections for submission, invent references, or silently rewrite source documents.
+ThesisCheck is a draft-review and format-control assistant for graduate theses. It aims to help students find formatting, citation, terminology and structure issues before supervisor review. It does not generate thesis sections for submission, fabricate references, or silently rewrite original text.
 
-> **Current status: Phase 0 scaffold.** This repository is not yet a functioning thesis analyzer. The home page and health endpoints run; rule configuration, Persian normalization, the normalized document model, test fixtures, and the initial test suite are foundations for later phases. Upload handling and analysis are not enabled in this phase.
+> **Current status: Phase 1 document-inspection foundation.** The app can validate and parse DOCX files and perform best-effort text extraction from PDFs. It shows a parser summary and diagnostics. Citation analysis, official formatting checks, the health score, report exports, authentication and payments are not implemented yet.
 
-## Product principles
+## Implemented
 
-- Findings should be evidence-based and distinguish confirmed defects from heuristics and unverifiable information.
-- Suggestions must remain separate from the original document.
-- No external AI calls are required. AI will be optional and provider-swappable.
-- Uploaded document text must not be written to application logs or used for model training.
-- University-specific formatting checks must use an explicitly versioned ruleset.
-- `rulesets/mazandaran_engineering_example.yaml` contains illustrative placeholders only. It is **not** an official University of Mazandaran guideline.
+- Persian RTL landing page with a DOCX/PDF inspection form.
+- FastAPI POST endpoint at /api/v1/inspect and /health check.
+- In-memory upload processing; the endpoint does not persist uploaded files or call an LLM.
+- Extension and signature validation, configurable size limit, DOCM rejection, DOCX ZIP entry/decompressed-size/compression-ratio limits, and macro-payload rejection.
+- DOCX heading/paragraph/table extraction, paragraph/run formatting hints, complex-script font hints, section/page setup and header/footer page-field metadata.
+- Best-effort PDF text extraction with page locations and explicit warnings about unavailable style checks and scanned PDFs.
+- Stable element IDs, normalized comparison text and parser diagnostics.
+- Synthetic test fixtures and CI checks.
+
+## Important limitations
+
+- The ruleset at rulesets/mazandaran_engineering_example.yaml is explicitly **unverified example configuration**, not the official University of Mazandaran guideline. Do not claim official compliance until the actual guideline is supplied and encoded.
+- DOCX page numbers cannot be reliably calculated by python-docx; findings use source IDs and heading paths. PDF extraction can mis-order multi-column, formula-rich or mixed RTL/LTR material.
+- Scanned PDFs are detected as lacking a text layer. OCR is not implemented.
+- DOCX footnotes/endnotes and embedded drawing/equation internals are not fully extracted. The parser reports known limitations.
+- The inspection route is for local/demo use, not an internet-exposed production service. An isolated worker, persistent jobs, authentication, rate limits and deployment hardening remain future work.
 
 ## Requirements
 
@@ -20,56 +30,45 @@ ThesisCheck (working name; Persian name candidate: **PayanNegar / پایان‌�
 
 ## Run locally
 
-```bash
-python -m venv .venv
-# Windows PowerShell:
-.\.venv\Scripts\Activate.ps1
-# macOS/Linux:
-# source .venv/bin/activate
+    python -m venv .venv
+    # Windows PowerShell:
+    .\.venv\Scripts\Activate.ps1
+    # macOS/Linux:
+    # source .venv/bin/activate
 
-python -m pip install --upgrade pip
-pip install -e ".[dev]"
-uvicorn app.main:app --reload
-```
+    python -m pip install --upgrade pip
+    pip install -e ".[dev]"
+    uvicorn app.main:app --reload
 
-Open `http://127.0.0.1:8000`. The current UI intentionally states that analysis is not yet enabled.
+Open http://127.0.0.1:8000. Interactive API documentation is at http://127.0.0.1:8000/docs.
 
-## Run tests
+## Run tests and lint
 
-```bash
-pytest
-```
+    pytest
+    ruff check .
 
-Regenerate clearly synthetic fixture documents:
+Regenerate the synthetic DOCX fixtures with:
 
-```bash
-python scripts/generate_fixtures.py
-```
+    python scripts/generate_fixtures.py
 
-Fixtures are test artifacts and contain fictional text. They must never be interpreted as real scientific sources or reference recommendations.
+All fixture content is fictional and must not be treated as a real publication or citation.
 
 ## Docker
 
-```bash
-cp .env.example .env
-# On Windows PowerShell: Copy-Item .env.example .env
-docker compose up --build
-```
+    cp .env.example .env
+    # Windows PowerShell: Copy-Item .env.example .env
+    docker compose up --build
 
-The initial container runs the web scaffold. A separate persistent analysis worker, upload sandboxing, database migrations and report exports are planned in later phases; do not expose this scaffold as a production document-processing service.
+The initial container runs the inspection demo. Do not expose it as a production file-processing service before the remaining security and operational work is implemented.
 
-## Configuration
+## Privacy draft (Persian)
 
-Configuration is environment-variable based. Start with `.env.example`. Never commit real API keys, JWT secrets, uploaded theses, or private reports. `LLM_MODE=off` is the default and must remain a supported mode.
+«در مرحله فعلی، فایل برای استخراج ساختار در حافظه موقت پردازش می‌شود و برنامه آن را در ذخیره‌سازی دائمی نگه نمی‌دارد. فقط خلاصه‌ای از ساختار شناسایی‌شده و چند نمونه محدود از متن به مرورگر بازگردانده می‌شود. در این نسخه از سرویس بیرونی هوش مصنوعی استفاده نمی‌شود. نسخه‌های آینده باید سیاست نگهداری، حذف دستی و ارسال احتمالی متن به ارائه‌دهنده بیرونی را شفاف اعلام کنند.»
 
 ## Planned phases
 
-See [PLAN.md](PLAN.md). Phase 0 focuses on a reproducible project foundation and test fixtures. Deterministic parsing and checkers come before LLM-assisted analysis.
-
-## Privacy notice draft (Persian)
-
-«در نسخه نهایی، فایل پایان‌نامه فقط برای اجرای بررسی‌های درخواستی استفاده می‌شود. متن فایل در لاگ‌های برنامه ثبت نمی‌شود. نگهداری و حذف فایل‌ها مطابق تنظیمات اعلام‌شده انجام خواهد شد. در صورت فعال‌سازی تحلیل‌گر بیرونی هوش مصنوعی، بخش‌های لازم از متن ممکن است برای همان سرویس ارسال شود؛ پیش از ارسال، ارائه‌دهنده و سیاست نگهداری داده به کاربر اعلام خواهد شد. این نسخه اولیه هنوز قابلیت بارگذاری یا تحلیل فایل را فعال نکرده است.»
+See PLAN.md. The next stage adds deterministic rule checkers and evidence-backed issues after parsing has been verified.
 
 ## Disclaimer
 
-ThesisCheck is a draft-review aid, not an academic grade, plagiarism verdict, citation verification service, or guarantee of compliance. Official faculty requirements must be supplied and verified before format results can be called compliant.
+ThesisCheck is a draft-review aid, not an academic grade, plagiarism verdict, verified-source service, or guarantee of compliance.
