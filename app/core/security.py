@@ -10,11 +10,11 @@ import time
 from collections import deque
 from math import ceil
 from typing import Any
-from typing import Any
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 
 class InspectionGuardMiddleware(BaseHTTPMiddleware):
