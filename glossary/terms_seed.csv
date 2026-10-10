@@ -1,11 +1,11 @@
-english_term,canonical_persian,alternate_persian,domain,notes
-machine learning,یادگیری ماشین,فراگیری ماشین,computer science,Editable seed; not an authoritative terminology standard
- deep learning,یادگیری عمیق,یادگیری ژرف,computer science,Editable seed; review canonical form locally
-overfitting,بیش‌برازش,بیش‌برازش مدل,computer science,Common Persian variants may depend on context
-dataset,مجموعه‌داده,مجموعه داده,data science,Spacing and ZWNJ variants are compared conservatively
-accuracy,دقت,صحت,machine learning,Metric naming depends on the evaluation context
-precision,دقت مثبت,Precision,information retrieval,Keep English term distinct from accuracy where relevant
-recall,فراخوانی,Recall,information retrieval,Keep English term distinct from sensitivity when needed
-deep neural network,شبکه عصبی عمیق,شبکه عصبی ژرف,computer science,Editable seed
-classification,دسته‌بندی,طبقه‌بندی,machine learning,Both variants may be accepted in different contexts
-natural language processing,پردازش زبان طبیعی,پردازش زبان‌های طبیعی,computer science,Editable seed
+english_term,canonical_fa,accepted_variants,domain,notes
+machine learning,یادگیری ماشین,فراگیری ماشین|یادگیری ماشینی,computer science,Seed suggestion only; user can override.
+deep learning,یادگیری عمیق,یادگیری ژرف,computer science,Seed suggestion only; user can override.
+overfitting,بیش‌برازش,بیش برازش|over-fitting,computer science,Seed suggestion only; user can override.
+dataset,مجموعه‌داده,مجموعه داده|دیتاست,computer science,Seed suggestion only; user can override.
+accuracy,دقت,صحت,computer science,Meaning depends on context; do not auto-correct.
+precision,درستی,precision,computer science,Context-dependent; distinguish from accuracy.
+recall,بازخوانی,فراخوانی|recall,computer science,Context-dependent; user confirmation recommended.
+neural network,شبکه عصبی,شبکهٔ عصبی,computer science,Seed suggestion only; user can override.
+feature,ویژگی,مشخصه,computer science,Context-dependent.
+algorithm,الگوریتم,راهکار محاسباتی,computer science,Seed suggestion only; user can override.

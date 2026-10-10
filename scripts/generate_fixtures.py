@@ -14,12 +14,14 @@ def add_content(doc: Document, *, bad: bool) -> None:
     doc.add_paragraph("This generated document is only for automated tests. Do not cite it.")
     doc.add_heading("چکیده", level=1)
     doc.add_paragraph(
-        "هدف این نمونه بررسی ساختار متن است. روش نمونه بر پایه داده‌های ساختگی است و نتیجه‌ای واقعی ارائه نمی‌کند."
+        "هدف این نمونه بررسی ساختار متن است. روش نمونه بر پایه داده‌های ساختگی است "
+        "و نتیجه‌ای واقعی ارائه نمی‌کند."
     )
     doc.add_paragraph("واژگان کلیدی: یادگیری ماشین، مجموعه‌داده، دقت")
     doc.add_heading("Abstract", level=1)
     doc.add_paragraph(
-        "This synthetic fixture describes a made-up procedure and contains no real research results."
+        "This synthetic fixture describes a made-up procedure and contains no real "
+        "research results."
     )
     doc.add_paragraph("Keywords: machine learning; dataset; accuracy")
     doc.add_heading("فصل اول: مقدمه", level=1)

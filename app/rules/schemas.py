@@ -53,8 +53,14 @@ class RuleSet(BaseModel):
         ids = [rule.id for rule in self.rules]
         if len(ids) != len(set(ids)):
             raise ValueError("Rule IDs must be unique")
-        if self.metadata.status == "verified" and not self.metadata.official_guideline_verified:
+        if (
+            self.metadata.status == "verified"
+            and not self.metadata.official_guideline_verified
+        ):
             raise ValueError("A verified ruleset must declare official guideline verification")
-        if self.metadata.status == "example_unverified" and self.metadata.official_guideline_verified:
+        if (
+            self.metadata.status == "example_unverified"
+            and self.metadata.official_guideline_verified
+        ):
             raise ValueError("An example-unverified ruleset cannot claim official verification")
         return self
