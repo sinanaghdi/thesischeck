@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     debug: bool = False
     database_url: str = "sqlite:///./data/thesischeck.db"
     max_upload_mb: int = Field(default=30, ge=1, le=100)
+    inspection_rate_limit: int = Field(default=20, ge=1, le=1000)
+    inspection_rate_window_seconds: int = Field(default=60, ge=1, le=3600)
     file_retention_days: int = Field(default=7, ge=1, le=365)
     llm_mode: str = "off"
     llm_base_url: str | None = None

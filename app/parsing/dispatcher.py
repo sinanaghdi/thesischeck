@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from app.parsing.docx_parser import parse_docx
 from app.parsing.pdf_parser import parse_pdf
-from app.parsing.safety import safe_display_filename, validate_document_bytes
+from app.parsing.safety import DocumentParseError, safe_display_filename, validate_document_bytes
 from app.schemas.document import NormalizedDocument
 
 
@@ -22,12 +22,12 @@ def parse_document(
             return parse_docx(content, display_name)
         if file_format == "pdf":
             return parse_pdf(content, display_name)
-    except Exception as exc:
+    except Exception:
         # Do not expose parser internals; malformed documents should fail as a clear 422.
         if file_format == "docx":
             message = "ساختار داخلی DOCX خراب است یا بخشی از آن قابل استخراج نیست."
         else:
             message = "ساختار PDF خراب است یا بخشی از آن قابل استخراج نیست."
-        raise ValueError(message) from exc
+        raise DocumentParseError(message) from None
     # Keeps dispatch fail-closed if another format is added without a parser.
-    raise ValueError("قالب فایل پشتیبانی نمی‌شود.")
+    raise DocumentParseError("قالب فایل پشتیبانی نمی‌شود.")
