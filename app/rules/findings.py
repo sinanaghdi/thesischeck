@@ -1,8 +1,7 @@
 """Common, localized result models for deterministic rules."""
 
-from typing import Literal
-
 from pydantic import BaseModel, ConfigDict, Field
+from typing import Literal
 
 
 Severity = Literal["error", "warning", "info"]

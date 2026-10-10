@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from app.rules.findings import Finding
 from app.rules.schemas import RuleDefinition
-from app.schemas.document import DocumentElement, NormalizedDocument
+from app.schemas.document import NormalizedDocument
 
 
 def check_required_sections(

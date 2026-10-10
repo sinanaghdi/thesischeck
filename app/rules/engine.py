@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from app.rules.checkers.abstracts import check_abstract_consistency, check_abstract_presence
 from app.rules.checkers.figures_tables import check_figure_table_consistency

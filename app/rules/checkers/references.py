@@ -6,7 +6,12 @@ import re
 
 from rapidfuzz.fuzz import token_sort_ratio
 
-from app.rules.checkers.common import body_elements, number_to_int, reference_elements, unique_in_order
+from app.rules.checkers.common import (
+    body_elements,
+    number_to_int,
+    reference_elements,
+    unique_in_order,
+)
 from app.rules.findings import Finding
 from app.rules.schemas import RuleDefinition
 from app.schemas.document import DocumentElement, NormalizedDocument
