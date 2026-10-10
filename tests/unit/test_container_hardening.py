@@ -19,6 +19,8 @@ def test_compose_profile_has_local_only_and_constrained_runtime() -> None:
     assert "no-new-privileges:true" in edge["security_opt"]
     assert edge["pids_limit"] == 64
     assert edge["mem_limit"] == "128m"
+    assert edge["entrypoint"] == ["nginx", "-g", "daemon off;"]
+    assert any(item.startswith("/run:") and "uid=101" in item for item in edge["tmpfs"])
     assert web["read_only"] is True
     assert web["init"] is True
     assert web["cap_drop"] == ["ALL"]
