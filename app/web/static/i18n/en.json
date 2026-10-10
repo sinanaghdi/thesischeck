@@ -1,0 +1,6 @@
+{
+  "app.name": "ThesisCheck",
+  "app.tagline": "Thesis quality review",
+  "analysis.not_ready": "The initial version is under development; file upload and analysis are not enabled yet.",
+  "privacy.title": "Privacy is a design requirement"
+}

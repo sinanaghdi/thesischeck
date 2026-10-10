@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="دستیار کنترل کیفیت نگارشی و قالب پایان‌نامه">
+  <title>{% block title %}ThesisCheck{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='/css/app.css') }}">
+  <script defer src="{{ url_for('static', path='/js/app.js') }}"></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="صفحه اصلی ThesisCheck">
+      <span class="brand-mark" aria-hidden="true">T</span>
+      <span><strong>ThesisCheck</strong><small>پایش کیفیت پایان‌نامه</small></span>
+    </a>
+    <nav aria-label="ناوبری اصلی"><a href="#how-it-works">روش کار</a><a href="#privacy">حریم خصوصی</a><button class="language-toggle" type="button" data-language-toggle aria-expanded="false">FA / EN</button></nav>
+  </header>
+  <main>{% block content %}{% endblock %}</main>
+  <footer class="site-footer"><span>ThesisCheck · نسخه توسعه ۰.۱</span><span>ابزار بازبینی است، نه نمره دانشگاهی</span></footer>
+</body>
+</html>

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}ThesisCheck | کنترل کیفیت پایان‌نامه{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <div class="eyebrow"><span class="status-dot"></span> دستیار کنترل کیفیت پایان‌نامه</div>
+    <h1>قبل از ارسال پایان‌نامه،<br><span>ایرادهای قابل‌پیشگیری را پیدا کنید.</span></h1>
+    <p class="hero-lead">بررسی ساختار، یکدستی اصطلاحات، ارجاع‌ها و قالب‌بندی؛ با شواهد قابل بازبینی و بدون دست‌کاری خودکار متن شما.</p>
+    <div class="notice" role="status"><strong>نسخه اولیه در حال ساخت است</strong><span>در این نسخه بارگذاری فایل و تحلیل پایان‌نامه فعال نیست. این صفحه فقط پیش‌نمایش محصول است.</span></div>
+    <a class="primary-button" href="#how-it-works">آشنایی با قابلیت‌ها <span aria-hidden="true">←</span></a>
+    <div class="trust-line"><span>بدون بازنویسی خودکار</span><span>بدون ساخت منبع جعلی</span><span>حالت بدون هوش مصنوعی</span></div>
+  </div>
+  <div class="report-preview" aria-label="پیش‌نمایش مفهومی گزارش">
+    <div class="preview-topline"><span>THESIS HEALTH REPORT</span><span class="preview-tag">نمونه مفهومی</span></div>
+    <h2>گزارش سلامت پایان‌نامه</h2>
+    <p class="preview-subtitle">این تصویر فقط ماکت رابط کاربری است؛ نتیجه تحلیل واقعی نیست.</p>
+    <div class="preview-metrics">
+      <div><small>امتیاز بازبینی</small><strong>— <em>/ 100</em></strong><span>پس از پیاده‌سازی تحلیل</span></div>
+      <div><small>پوشش بررسی</small><strong>— <em>%</em></strong><span>با نمایش موارد بررسی‌نشده</span></div>
+    </div>
+    <div class="preview-line"><span class="line-icon critical">!</span><div><strong>ارجاع و فهرست منابع</strong><small>شواهد و محل دقیق در گزارش</small></div><span class="preview-skeleton"></span></div>
+    <div class="preview-line"><span class="line-icon warning">~</span><div><strong>یکدستی اصطلاحات</strong><small>واژه‌های فارسی و معادل انگلیسی</small></div><span class="preview-skeleton short"></span></div>
+    <div class="preview-line"><span class="line-icon neutral">i</span><div><strong>چکیده فارسی و انگلیسی</strong><small>مقایسه ساختاری و عددی</small></div><span class="preview-skeleton"></span></div>
+    <div class="preview-footnote">نتیجه نهایی به کیفیت فایل و قوانین تأییدشده وابسته است.</div>
+  </div>
+</section>
+<section class="feature-section" id="how-it-works">
+  <div class="section-heading"><div class="eyebrow">مسیر بررسی</div><h2>از فایل خام تا گزارش قابل اقدام</h2><p>هر یافته باید محل و شاهد داشته باشد؛ موارد نامطمئن نیز جداگانه مشخص می‌شوند.</p></div>
+  <div class="feature-grid">
+    <article class="feature-card"><div class="feature-number">۰۱</div><h3>تشخیص ساختار</h3><p>شناسایی فصل‌ها، چکیده‌ها، جدول‌ها و محدودیت‌های استخراج فایل.</p></article>
+    <article class="feature-card"><div class="feature-number">۰۲</div><h3>کنترل قواعد</h3><p>مقایسه با مجموعه قوانین قابل‌ویرایش؛ مقادیر دانشگاهی تا زمان تأیید رسمی، نمونه باقی می‌مانند.</p></article>
+    <article class="feature-card"><div class="feature-number">۰۳</div><h3>گزارش مستند</h3><p>اولویت‌بندی ایرادها با نقل‌قول و محل، همراه با توضیح و پیشنهاد اصلاح.</p></article>
+  </div>
+</section>
+<section class="privacy-section" id="privacy"><div class="privacy-symbol" aria-hidden="true">⌁</div><div><h2>حریم خصوصی، پیش‌فرض طراحی است</h2><p>در نسخه نهایی، فایل‌ها باید شناسه تصادفی داشته باشند، متن پایان‌نامه وارد لاگ نشود و حذف دستی و زمان‌بندی‌شده پشتیبانی شود. استفاده از سرویس بیرونی هوش مصنوعی باید پیش از ارسال متن به‌روشنی اعلام شود.</p></div></section>
+<section class="english-panel" data-english-panel hidden lang="en" dir="ltr"><strong>ThesisCheck is a draft-review assistant.</strong><p>It flags evidence-backed writing and formatting issues. This Phase 0 preview does not accept uploads or analyze documents.</p></section>
+{% endblock %}

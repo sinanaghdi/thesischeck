@@ -1,0 +1,1 @@
+\"\"\"SQLAlchemy declarative base for future persistent entities.\"\"\"\n\nfrom sqlalchemy.orm import DeclarativeBase\n\n\nclass Base(DeclarativeBase):\n    pass\n

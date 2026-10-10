@@ -1,0 +1,103 @@
+metadata:
+  name: "University of Mazandaran — Faculty of Engineering — EXAMPLE ONLY"
+  university: "University of Mazandaran (unverified profile)"
+  faculty: "Faculty of Engineering / Computer Engineering (example)"
+  version: "0.1.0-example"
+  status: "example_unverified"
+  official_guideline_verified: false
+  warning:
+    fa: "هشدار مهم: این مجموعه قوانین نمونه و تأییدنشده است. هیچ مقدار قلم، حاشیه، فاصله خطوط، صفحه‌بندی یا ترتیب صفحات، قانون رسمی دانشگاه مازندران نیست. پیش از استفاده واقعی، آن را با شیوه‌نامه رسمی و تأییدشده جایگزین کنید."
+    en: "IMPORTANT: This is an unverified example ruleset. No font, margin, line-spacing, pagination, or front-matter value here is an official University of Mazandaran rule. Replace and verify against the official guideline before real use."
+
+# Product scoring defaults, not university policy.
+scoring_weights:
+  formatting_structure: 25
+  references_citations: 20
+  research_traceability: 20
+  figures_tables_algorithms: 15
+  abstracts_terminology: 10
+  writing_quality: 10
+
+rules:
+  - id: FORMAT_BODY_FONT
+    title:
+      fa: "بررسی قلم متن اصلی"
+      en: "Body font check"
+    severity: warning
+    checker: docx_body_font
+    enabled: false
+    parameters:
+      expected_persian_font: "REPLACE_WITH_OFFICIAL_PERSIAN_FONT"
+      expected_latin_font: "REPLACE_WITH_OFFICIAL_LATIN_FONT"
+    explanation:
+      fa: "قلم متن اصلی با مقادیر پیکربندی‌شده مقایسه می‌شود؛ این قاعده تا زمان تأیید شیوه‌نامه غیرفعال است."
+      en: "Compare body fonts with configured values; this rule stays disabled until the guideline is verified."
+    how_to_fix:
+      fa: "قلم‌های مصوب را از شیوه‌نامه رسمی وارد و سپس این قاعده را فعال کنید."
+      en: "Enter approved fonts from the official guideline, then enable this rule."
+
+  - id: FORMAT_PAGE_MARGINS
+    title:
+      fa: "بررسی حاشیه‌های صفحه"
+      en: "Page margin check"
+    severity: warning
+    checker: docx_page_margins
+    enabled: false
+    parameters:
+      top_cm: null
+      bottom_cm: null
+      inside_cm: null
+      outside_cm: null
+    explanation:
+      fa: "حاشیه‌های صفحه باید با مقادیر تأییدشده مقایسه شوند؛ در حال حاضر مقدار رسمی وارد نشده است."
+      en: "Page margins should be compared with verified values; official values have not been supplied."
+    how_to_fix:
+      fa: "مقادیر را از شیوه‌نامه رسمی دانشگاه وارد کنید."
+      en: "Enter values from the official university guideline."
+
+  - id: FORMAT_LINE_SPACING
+    title:
+      fa: "بررسی فاصله خطوط"
+      en: "Line-spacing check"
+    severity: warning
+    checker: docx_line_spacing
+    enabled: false
+    parameters:
+      expected_multiple: null
+    explanation:
+      fa: "فاصله خطوط تا زمان دریافت مقدار رسمی بررسی انطباق نمی‌شود."
+      en: "Line spacing will not be checked for compliance until an official value is supplied."
+    how_to_fix:
+      fa: "مقدار رسمی فاصله خطوط را مشخص و این قاعده را پس از اعتبارسنجی فعال کنید."
+      en: "Set the official line-spacing value and enable the rule only after verification."
+
+  - id: ABSTRACT_BOTH_LANGUAGES
+    title:
+      fa: "وجود چکیده فارسی و انگلیسی"
+      en: "Persian and English abstracts present"
+    severity: warning
+    checker: abstract_presence
+    enabled: true
+    parameters: {}
+    explanation:
+      fa: "وجود بخش چکیده به هر دو زبان بررسی می‌شود."
+      en: "Check for an abstract section in both languages."
+    how_to_fix:
+      fa: "بخش‌های چکیده را بررسی کنید؛ تشخیص خودکار ممکن است نیازمند تأیید کاربر باشد."
+      en: "Review the abstract sections; automatic detection may need user confirmation."
+
+  - id: REFERENCES_PARSING_NOTICE
+    title:
+      fa: "بازبینی فهرست منابع"
+      en: "Reference-list review"
+    severity: info
+    checker: reference_parse_diagnostics
+    enabled: true
+    parameters:
+      fuzzy_duplicate_threshold: 92
+    explanation:
+      fa: "ساختار منابع با روش‌های ابتکاری شناسایی می‌شود و نتیجه، راستی‌آزمایی واقعی منبع نیست."
+      en: "Reference structure is detected heuristically; this does not verify that a source is real."
+    how_to_fix:
+      fa: "موارد مبهم را با منبع اصلی تطبیق دهید؛ موارد غیرقابل بررسی با صراحت مشخص می‌شوند."
+      en: "Verify ambiguous entries against original sources; unverifiable items will be marked explicitly."
