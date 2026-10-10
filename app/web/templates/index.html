@@ -18,6 +18,20 @@
     </form>
     <section class="inspection-results" id="inspection-results" hidden aria-live="polite">
       <div class="results-title"><div><span class="eyebrow">خلاصه استخراج</span><h2 id="result-file-name">نتیجه</h2></div><span class="results-format" id="result-format"></span></div>
+      <section class="health-report-panel" id="health-report-panel">
+        <div class="health-score-main">
+          <div class="score-number-block"><small id="score-label">امتیاز موقت سلامت</small><div><strong id="score-value">—</strong><span>/ 100</span></div><span id="score-coverage" class="score-coverage">پوشش: —</span></div>
+          <div class="score-summary-block"><h3>خلاصه اجرایی</h3><p id="score-summary"></p><p class="score-warning">این امتیاز نمره دانشگاهی نیست. دسته‌های بررسی‌نشده از محاسبه حذف می‌شوند و پوشش گزارش جداگانه نمایش داده می‌شود.</p></div>
+        </div>
+        <div class="score-categories" id="score-categories"></div>
+        <details class="score-method"><summary>روش محاسبه امتیاز و وزن‌ها</summary><p id="score-formula"></p><p id="score-weight-note"></p></details>
+        <div class="report-export-actions">
+          <button type="button" class="export-button" data-export-format="html">دریافت گزارش HTML</button>
+          <button type="button" class="export-button" data-export-format="json">دریافت JSON</button>
+          <button type="button" class="export-button" data-export-format="pdf">دریافت PDF</button>
+        </div>
+        <p class="export-status" id="export-status" role="status" aria-live="polite">گزارش‌ها هنگام درخواست ساخته می‌شوند و در ذخیره‌سازی دائمی نگه داشته نمی‌شوند.</p>
+      </section>
       <div class="result-metrics" id="result-metrics"></div>
       <div class="result-columns">
         <div><h3>عنوان‌های شناسایی‌شده</h3><ol id="result-headings" class="detected-headings"></ol></div>

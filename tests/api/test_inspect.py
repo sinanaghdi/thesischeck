@@ -27,9 +27,11 @@ def test_inspect_returns_summary_without_full_document_text() -> None:
     assert body["source_format"] == "docx"
     assert body["element_count"] > 0
     assert body["headings"]
-    assert body["checks"]["ruleset_verified"] is False
-    assert body["checks"]["rules_checked"] > 0
-    assert body["checks"]["findings"]
+    assert body["health_report"]["ruleset_verified"] is False
+    assert body["health_report"]["score"] is not None
+    assert body["health_report"]["coverage_percent"] < 100
+    assert body["health_report"]["checks"]["rules_checked"] > 0
+    assert body["health_report"]["checks"]["findings"]
     assert "privacy_note" in body
 
 
@@ -44,6 +46,7 @@ def test_inspect_page_contains_upload_form() -> None:
     assert response.status_code == 200
     assert 'id="inspect-form"' in response.text
     assert 'id="inspect-submit"' in response.text
+    assert 'data-export-format="pdf"' in response.text
 
 
 def test_inspect_returns_controlled_error_for_malformed_docx_package() -> None:
