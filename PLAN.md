@@ -13,7 +13,8 @@
 - [x] Phase 7 (slice 1): API request guardrails, process-local rate limiting, no-store/security headers, and sanitized unexpected processing errors.
 - [x] Phase 7 (slice 2): supervised parser subprocess with wall-clock timeout, bounded worker slots, minimal environment and platform-dependent POSIX resource limits.
 - [x] Phase 7 (slice 3): streaming raw request-body size guard before multipart parsing, including requests without a trustworthy Content-Length.
-- [ ] Phase 7 follow-up: isolated container/worker identity, trusted-edge body limits and shared rate limiting, retention/deletion workflows, fuzz/security tests, 100-page performance benchmark and production deployment acceptance.
+- [x] Phase 7 (slice 4): deterministic adversarial upload regressions, malformed/conflicting Content-Length tests, parser-worker environment allowlist tests, and an opt-in 100-logical-page performance benchmark harness.
+- [ ] Phase 7 follow-up: run benchmark on the intended deployment host, add property-based fuzzing if the dependency budget permits, isolated container/worker identity, trusted-edge body limits and shared rate limiting, retention/deletion workflows, and production deployment acceptance.
 
 ## Architecture decisions
 
@@ -41,3 +42,10 @@
 - In-app filters support severity, category, free-text search, and one-click reset.
 - Parsing coverage and parser limitations remain visually distinct from quality findings.
 - Findings continue to show their evidence, category, confidence hint and source location; filtering does not modify the source document.
+
+
+## Phase 7 slice 4 validation boundaries
+
+- Adversarial tests are deterministic regression tests, not a substitute for continuous fuzzing or third-party security review.
+- The large-document benchmark runs on demand and is intentionally excluded from CI due to noisy shared-runner timing. Its JSON output should be retained with deployment/benchmark notes when tested on the intended host.
+- No public-production readiness is claimed until the parser has a separate constrained OS/container identity and the remaining trusted-edge, retention, and load-test requirements are addressed.
