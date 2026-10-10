@@ -17,7 +17,7 @@ settings = get_settings()
 app = FastAPI(
     title=settings.app_name,
     description="Persian-first thesis writing-quality and format-control assistant.",
-    version="0.4.0",
+    version="0.5.0",
     debug=settings.debug,
 )
 app.add_middleware(
@@ -50,4 +50,4 @@ def home(request: Request) -> HTMLResponse:
 @app.get("/health", tags=["health"])
 def health() -> dict[str, str]:
     """Liveness endpoint; database readiness will be added with persistence."""
-    return {"status": "ok", "service": "thesischeck", "phase": "security-guardrails"}
+    return {"status": "ok", "service": "thesischeck", "phase": "parser-worker-supervision"}
