@@ -2,5 +2,10 @@
   "app.name": "ThesisCheck",
   "app.tagline": "Thesis quality review",
   "analysis.not_ready": "The initial version is under development; file upload and analysis are not enabled yet.",
-  "privacy.title": "Privacy is a design requirement"
+  "privacy.title": "Privacy is a design requirement",
+  "upload.label": "Choose a thesis draft for initial inspection",
+  "upload.help": "DOCX and PDF only; 30 MB maximum; no persistent storage in this version",
+  "upload.submit": "Inspect document structure",
+  "upload.in_progress": "Validating file and extracting document structure.",
+  "upload.done": "Initial extraction finished; scientific review and final formatting checks are not implemented yet."
 }

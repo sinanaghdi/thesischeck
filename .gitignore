@@ -25,4 +25,5 @@ reports/private/
 .DS_Store
 Thumbs.db
 
-# Generated test fixtures
+# Generated fixtures
+tests/fixtures/*.docx
