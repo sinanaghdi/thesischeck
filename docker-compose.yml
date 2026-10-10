@@ -4,6 +4,20 @@ services:
     env_file:
       - .env
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     restart: unless-stopped
-    # Phase 0 has no upload or analysis endpoints. Do not treat as production-ready.
+    init: true
+    read_only: true
+    tmpfs:
+      - "/tmp:rw,noexec,nosuid,nodev,size=192m"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 2g
+    cpus: "2.0"
+    ulimits:
+      nofile:
+        soft: 256
+        hard: 512

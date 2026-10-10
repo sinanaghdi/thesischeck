@@ -2,7 +2,7 @@
 
 ThesisCheck is a draft-review and format-control assistant for graduate theses. It helps identify potential formatting, citation, terminology, abstract and structure issues before supervisor review. It does not generate thesis sections for submission, fabricate references, or silently rewrite source text.
 
-> **Current status: Phase 7 slice 4 — adversarial input regressions and an opt-in 100-page benchmark harness.** The app accepts DOCX/PDF for in-memory inspection, runs deterministic offline checks, produces a coverage-aware provisional score, and exports JSON and self-contained RTL HTML. PDF export uses optional Playwright/Chromium.
+> **Current status: Phase 7 slice 5 — hardened local Docker runtime profile.** The app accepts DOCX/PDF for in-memory inspection, runs deterministic offline checks, produces a coverage-aware provisional score, and exports JSON and self-contained RTL HTML. PDF export uses optional Playwright/Chromium.
 
 ## Implemented
 
@@ -22,6 +22,7 @@ ThesisCheck is a draft-review and format-control assistant for graduate theses. 
 - Supervised parser subprocess with a configurable wall-clock deadline, bounded concurrent worker slots, a minimal environment, and optional POSIX CPU/address-space/file-descriptor limits.
 - Streaming raw-body cap on upload endpoints: max configured file size plus 1 MiB multipart overhead; oversized declared or streamed requests are rejected with HTTP 413 before document parsing.
 - Synthetic DOCX fixtures generated during tests and GitHub Actions for pytest + Ruff.
+- Hardened local Docker profile: non-root runtime user, loopback-only port binding, read-only container root filesystem, temporary filesystem for uploads, dropped Linux capabilities, no-new-privileges, CPU/memory/PID limits, and bounded Uvicorn concurrency.
 
 ## Run locally
 
@@ -37,6 +38,23 @@ Requirements: Python 3.12+. Optional: Docker and Docker Compose.
     uvicorn app.main:app --reload
 
 Open http://127.0.0.1:8000. Interactive API docs: http://127.0.0.1:8000/docs.
+
+## Hardened local Docker Compose profile
+
+Create a local environment file and keep it out of Git:
+
+    # Windows PowerShell
+    Copy-Item .env.example .env
+    # macOS/Linux
+    # cp .env.example .env
+
+Keep `DEBUG=false`; replace the placeholder `JWT_SECRET` with a strong random value before sharing the environment file, even though authentication is not implemented in this demo. Start the local demo:
+
+    docker compose up --build
+
+The Compose profile binds the web port to `127.0.0.1` only, runs as the unprivileged `appuser`, enables a read-only root filesystem, mounts a bounded `/tmp`, drops Linux capabilities, enables `no-new-privileges`, caps PIDs/CPU/memory, and limits Uvicorn to four concurrent connections. Uploaded multipart data may temporarily use `/tmp`; no persistent upload volume is configured.
+
+These are container-level defense-in-depth settings, not proof that the parser is isolated. The parser subprocess still shares the web container's OS identity and network access. Do not expose this demo directly to the public internet; use a separately constrained parser worker/container plus trusted reverse-proxy limits and shared rate limiting first.
 
 ## PDF export (optional)
 
@@ -108,7 +126,7 @@ Synthetic fixture generator: scripts/generate_fixtures.py. Fixture content is fi
 - Citation/reference parsing is heuristic. Missing matches do not prove an invalid source, and similarity does not prove duplication. No citation, DOI, venue or page number is fabricated.
 - DOCX page numbers cannot be reliably computed by python-docx; source IDs and heading paths are used. PDF extraction may mis-order columns, formulas and mixed RTL/LTR content. Scanned-PDF OCR and complete footnote/equation extraction are not implemented.
 - Research traceability, LLM-assisted writing checks, user accounts, payments and persistent job management are not implemented.
-- The inspection route remains for local/demo use. Isolated parsing workers, authentication, shared rate limiting at a trusted edge, request-body limits and additional resource-exhaustion hardening are required before public deployment.
+- The inspection route remains for local/demo use. The Compose profile is defense in depth only; a separate isolated parser worker/container identity, authentication, shared rate limiting at a trusted edge, request-body limits there, retention/deletion workflows and target-environment load testing are required before public deployment.
 
 ## Privacy notice draft (Persian)
 
