@@ -9,7 +9,11 @@ from fastapi.templating import Jinja2Templates
 
 from app.api.v1.inspect import router as inspect_router
 from app.core.config import get_settings
-from app.core.security import BasicAuthMiddleware, InspectionGuardMiddleware, RequestBodyLimitMiddleware
+from app.core.security import (
+    BasicAuthMiddleware,
+    InspectionGuardMiddleware,
+    RequestBodyLimitMiddleware,
+)
 
 BASE_DIR = Path(__file__).resolve().parent
 settings = get_settings()

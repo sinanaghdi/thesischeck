@@ -39,7 +39,7 @@ def build_test_client(
 
 
 def encoded_credentials(username: str, password: str) -> str:
-    raw = f"{username}:{password}".encode("utf-8")
+    raw = f"{username}:{password}".encode()
     return f"Basic {base64.b64encode(raw).decode('ascii')}"
 
 
