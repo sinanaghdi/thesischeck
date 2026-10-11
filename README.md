@@ -48,11 +48,15 @@ Create a local environment file and keep it out of Git:
     # macOS/Linux
     # cp .env.example .env
 
-Generate a strong internal token and paste it after `PARSER_SERVICE_TOKEN=` in `.env`:
+Generate both the parser token and the local demo login credentials. The Docker Compose profile **requires** a username and a password with at least 24 characters; the example password is intentionally blank and is not a usable credential.
 
     python -c "import secrets; print(secrets.token_urlsafe(48))"
 
-Keep `DEBUG=false` and replace the placeholder `JWT_SECRET` with a strong random value before sharing the environment file, even though authentication is not implemented in this demo. Start the local demo:
+Paste one generated value after `PARSER_SERVICE_TOKEN=` and another after `THESISCHECK_BASIC_AUTH_PASSWORD=` in `.env`. Keep `THESISCHECK_BASIC_AUTH_USERNAME` as your desired login name. The Docker web app enables a shared HTTP Basic Auth gate; your browser will show its native username/password prompt. The `/health` route remains available for container health checks.
+
+This is a single shared demo credential, not individual user accounts, authorization roles, password reset, or a production identity system. Protect the `.env` file and never commit it.
+
+Keep `DEBUG=false` and replace the placeholder `JWT_SECRET` with a strong random value before sharing the environment file. Start the local demo:
 
     docker compose up --build
 
@@ -62,7 +66,7 @@ The Nginx edge enforces a request-body cap, per-source-IP rate limiting and conc
 
 The web app sends raw document bytes to `http://parser:8001/internal/parse` with the shared token. The parser service checks that token using a constant-time comparison, applies its own raw-body limit, and invokes the supervised parsing subprocess. It receives no database, JWT or LLM configuration and does not persist inputs or normalized results.
 
-These are layered defenses, not an absolute sandbox: the containers share the host kernel, and the parser can contact its web peer on the private network. The configured Nginx shared zone rate limits requests at this single edge instance; horizontally scaled edge instances would need coordinated/shared enforcement. Authentication/authorization, a production trusted-edge setup, retention policy if persistence is introduced, and target-environment security/load acceptance remain open.
+These are layered defenses, not an absolute sandbox: the containers share the host kernel, and the parser can contact its web peer on the private network. The configured Nginx shared zone rate limits requests at this single edge instance; horizontally scaled edge instances would need coordinated/shared enforcement. Per-user accounts and role-based authorization, a production trusted-edge setup, retention policy if persistence is introduced, and target-environment security/load acceptance remain open.
 
 ## PDF export (optional)
 
@@ -134,7 +138,7 @@ Synthetic fixture generator: scripts/generate_fixtures.py. Fixture content is fi
 - Citation/reference parsing is heuristic. Missing matches do not prove an invalid source, and similarity does not prove duplication. No citation, DOI, venue or page number is fabricated.
 - DOCX page numbers cannot be reliably computed by python-docx; source IDs and heading paths are used. PDF extraction may mis-order columns, formulas and mixed RTL/LTR content. Scanned-PDF OCR and complete footnote/equation extraction are not implemented.
 - Research traceability, LLM-assisted writing checks, user accounts, payments and persistent job management are not implemented.
-- The inspection route remains for local/demo use. Compose now gives the parser a separate container, but this remains defense in depth rather than a complete sandbox. Authentication/authorization, shared rate limiting at a trusted edge, request-body limits there, retention/deletion policy if persistence is introduced, and target-environment load/security testing are required before public deployment.
+- The inspection route remains for local/demo use. The Docker profile includes a shared Basic Auth gate for the demo; it is not per-user authentication or role-based authorization. Per-user accounts, shared rate limiting across edge replicas, retention/deletion policy if persistence is introduced, and target-environment load/security testing are required before public deployment.
 
 ## Privacy notice draft (Persian)
 
