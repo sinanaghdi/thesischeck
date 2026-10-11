@@ -18,7 +18,8 @@
 - [x] Phase 7 (slice 6): add a token-authenticated parser-service container on an internal-only network, without a published host port or outbound route; keep DB/JWT/LLM settings out of its environment and retain supervised parsing inside it.
 - [x] Phase 7 (slice 7): add a loopback-only Nginx edge, per-source-IP request/connection limits, request-body cap, slow-client timeouts and streaming proxying; remove direct host publishing from the web service.
 - [x] Phase 8 (slice 1): add optional shared HTTP Basic Auth, enabled by the Docker demo profile; validate credential strength, protect all routes except liveness health, add no-store challenges and CI coverage.
-- [ ] Phase 7/8 follow-up: run benchmark on the intended deployment host, add property-based fuzzing if the dependency budget permits, test actual Compose startup and container restrictions on the target Docker host, coordinate limits across edge replicas if scaled, implement real per-user accounts/roles before offering multiple users, define retention/deletion behavior if persistence is introduced, and complete production acceptance tests.
+- [x] Phase 9 (slice 1): add a manually triggered benchmark workflow for synthetic supervised DOCX parsing; publish a JSON artifact and workflow summary without making noisy performance timing part of regular pull-request CI.
+- [ ] Phase 7/8/9 follow-up: run the benchmark on the intended deployment host (the hosted CI benchmark is only a repeatable baseline), add property-based fuzzing if the dependency budget permits, verify Compose startup and container restrictions on the target Docker host, coordinate limits across edge replicas if scaled, implement real per-user accounts/roles before offering multiple users, define retention/deletion behavior if persistence is introduced, and complete production security/load acceptance tests.
 
 ## Architecture decisions
 
