@@ -5,6 +5,9 @@ shared limiter at the trusted reverse proxy or another shared store.
 """
 from __future__ import annotations
 
+import base64
+import binascii
+import hmac
 import threading
 import time
 from collections import deque
@@ -107,6 +110,91 @@ class InspectionGuardMiddleware(BaseHTTPMiddleware):
             response.headers["Pragma"] = "no-cache"
         return response
 
+
+class BasicAuthMiddleware(BaseHTTPMiddleware):
+    """Optional shared-password gate for demos; not a per-user account system."""
+
+    def __init__(
+        self,
+        app: ASGIApp,
+        *,
+        enabled: bool = False,
+        username: str | None = None,
+        password: str | None = None,
+        exempt_paths: frozenset[str] | set[str] = frozenset({"/health"}),
+        realm: str = "ThesisCheck",
+        max_header_bytes: int = 8192,
+    ) -> None:
+        super().__init__(app)
+        if max_header_bytes < 128:
+            raise ValueError("max_header_bytes must be at least 128")
+        if enabled and (
+            not username
+            or len(username.strip()) < 3
+            or username != username.strip()
+            or not password
+            or len(password) < 24
+        ):
+            raise ValueError(
+                "Enabled Basic Auth requires a clean username and a password of at least 24 characters"
+            )
+        self.enabled = enabled
+        self.username = username or ""
+        self.password = password or ""
+        self.exempt_paths = frozenset(exempt_paths)
+        self.realm = realm.replace('"', "")
+        self.max_header_bytes = max_header_bytes
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        if not self.enabled or request.url.path in self.exempt_paths:
+            return await call_next(request)
+
+        if not self._is_authorized(request.headers.get("authorization", "")):
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "detail": {
+                        "code": "authentication_required",
+                        "message": "برای دسترسی به این بخش، نام کاربری و گذرواژهٔ معتبر وارد کنید.",
+                    }
+                },
+                headers={
+                    "WWW-Authenticate": f'Basic realm="{self.realm}", charset="UTF-8"',
+                    "Cache-Control": "no-store",
+                    "Pragma": "no-cache",
+                    "X-Content-Type-Options": "nosniff",
+                    "Referrer-Policy": "no-referrer",
+                    "X-Frame-Options": "DENY",
+                },
+            )
+
+        response = await call_next(request)
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("Referrer-Policy", "no-referrer")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        return response
+
+    def _is_authorized(self, authorization: str) -> bool:
+        if not authorization or len(authorization) > self.max_header_bytes:
+            return False
+        scheme, separator, encoded = authorization.partition(" ")
+        if not separator or scheme.lower() != "basic" or not encoded:
+            return False
+        try:
+            decoded = base64.b64decode(encoded, validate=True).decode("utf-8")
+        except (binascii.Error, UnicodeDecodeError, ValueError):
+            return False
+
+        supplied_username, separator, supplied_password = decoded.partition(":")
+        if not separator:
+            return False
+        username_matches = hmac.compare_digest(
+            supplied_username.encode("utf-8"), self.username.encode("utf-8")
+        )
+        password_matches = hmac.compare_digest(
+            supplied_password.encode("utf-8"), self.password.encode("utf-8")
+        )
+        return username_matches and password_matches
 
 
 class RequestBodyLimitMiddleware:

@@ -36,15 +36,27 @@ jobs:
           cp .env.example .env
           python - <<'PY'
           from pathlib import Path
+          import os
           import secrets
 
           path = Path(".env")
           content = path.read_text(encoding="utf-8")
-          before = "PARSER_SERVICE_TOKEN=\n"
-          after = f"PARSER_SERVICE_TOKEN={secrets.token_urlsafe(48)}\n"
-          if content.count(before) != 1:
-              raise SystemExit("Expected exactly one empty PARSER_SERVICE_TOKEN in .env")
-          path.write_text(content.replace(before, after), encoding="utf-8")
+          parser_token = secrets.token_urlsafe(48)
+          auth_username = "thesischeck-ci"
+          auth_password = secrets.token_urlsafe(32)
+          replacements = {
+              "PARSER_SERVICE_TOKEN=": f"PARSER_SERVICE_TOKEN={parser_token}",
+              "THESISCHECK_BASIC_AUTH_USERNAME=thesischeck-demo": f"THESISCHECK_BASIC_AUTH_USERNAME={auth_username}",
+              "THESISCHECK_BASIC_AUTH_PASSWORD=": f"THESISCHECK_BASIC_AUTH_PASSWORD={auth_password}",
+          }
+          for before, after in replacements.items():
+              if content.count(before) != 1:
+                  raise SystemExit(f"Expected exactly one setting: {before}")
+              content = content.replace(before, after)
+          path.write_text(content, encoding="utf-8")
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
+              env_file.write(f"THESISCHECK_BASIC_AUTH_USERNAME={auth_username}\n")
+              env_file.write(f"THESISCHECK_BASIC_AUTH_PASSWORD={auth_password}\n")
           PY
       - name: Validate Compose configuration
         run: docker compose config --quiet
@@ -89,6 +101,7 @@ jobs:
           document.save("/tmp/thesischeck-smoke.docx")
           PY
           curl --fail-with-body --silent --show-error \
+            --user "$THESISCHECK_BASIC_AUTH_USERNAME:$THESISCHECK_BASIC_AUTH_PASSWORD" \
             -F "file=@/tmp/thesischeck-smoke.docx" \
             http://127.0.0.1:8000/api/v1/inspect \
             -o /tmp/thesischeck-inspect.json
@@ -105,6 +118,7 @@ jobs:
       - name: Validate JSON report export through Nginx
         run: |
           curl --fail-with-body --silent --show-error \
+            --user "$THESISCHECK_BASIC_AUTH_USERNAME:$THESISCHECK_BASIC_AUTH_PASSWORD" \
             -F "file=@/tmp/thesischeck-smoke.docx" \
             "http://127.0.0.1:8000/api/v1/report?format=json" \
             -o /tmp/thesischeck-report.json

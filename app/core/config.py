@@ -3,7 +3,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -33,6 +33,21 @@ class Settings(BaseSettings):
     llm_max_tokens_per_job: int = Field(default=12000, ge=0, le=100000)
     jwt_secret: str = "development-only-change-me"
     cors_origins: str = "http://127.0.0.1:8000,http://localhost:8000"
+    basic_auth_enabled: bool = False
+    basic_auth_username: str | None = None
+    basic_auth_password: str | None = None
+
+    @model_validator(mode="after")
+    def validate_basic_auth_settings(self) -> "Settings":
+        """Reject enabled Basic Auth with weak or missing shared credentials."""
+        if self.basic_auth_enabled:
+            username = self.basic_auth_username or ""
+            password = self.basic_auth_password or ""
+            if len(username.strip()) < 3 or username != username.strip():
+                raise ValueError("BASIC_AUTH_USERNAME must contain at least 3 characters without outer spaces")
+            if len(password) < 24:
+                raise ValueError("BASIC_AUTH_PASSWORD must contain at least 24 characters")
+        return self
 
 
 @lru_cache(maxsize=1)

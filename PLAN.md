@@ -17,7 +17,8 @@
 - [x] Phase 7 (slice 5): harden the local Docker runtime with loopback-only port publishing, read-only root filesystem, bounded temporary storage/resources, no-new-privileges, dropped capabilities and Uvicorn concurrency limits.
 - [x] Phase 7 (slice 6): add a token-authenticated parser-service container on an internal-only network, without a published host port or outbound route; keep DB/JWT/LLM settings out of its environment and retain supervised parsing inside it.
 - [x] Phase 7 (slice 7): add a loopback-only Nginx edge, per-source-IP request/connection limits, request-body cap, slow-client timeouts and streaming proxying; remove direct host publishing from the web service.
-- [ ] Phase 7 follow-up: run benchmark on the intended deployment host, add property-based fuzzing if the dependency budget permits, test actual Compose startup and container restrictions on the target Docker host, coordinate limits across edge replicas if scaled, add authentication/authorization, define retention/deletion behavior if persistence is introduced, and complete production acceptance tests.
+- [x] Phase 8 (slice 1): add optional shared HTTP Basic Auth, enabled by the Docker demo profile; validate credential strength, protect all routes except liveness health, add no-store challenges and CI coverage.
+- [ ] Phase 7/8 follow-up: run benchmark on the intended deployment host, add property-based fuzzing if the dependency budget permits, test actual Compose startup and container restrictions on the target Docker host, coordinate limits across edge replicas if scaled, implement real per-user accounts/roles before offering multiple users, define retention/deletion behavior if persistence is introduced, and complete production acceptance tests.
 
 ## Architecture decisions
 
@@ -73,3 +74,11 @@
 - Nginx is the only host-published service and binds to loopback by default. It enforces a bounded request body, per-source-IP rate and concurrent-connection limits, slow-body/read timeouts, and disables request-body buffering to disk.
 - The web app is not host-published and is reachable through the internal edge network; the parser remains on its separate internal network.
 - Nginx rate/connection zones are shared within this single edge instance. Multiple edge replicas need coordinated rate enforcement; do not describe this profile as a complete public-production gateway.
+
+
+## Phase 8 slice 1 shared demo access gate
+
+- Docker Compose requires `THESISCHECK_BASIC_AUTH_USERNAME` and a `THESISCHECK_BASIC_AUTH_PASSWORD` with at least 24 characters, then enables HTTP Basic Auth on the web application. The local Python development default remains disabled so `uvicorn --reload` works without setup.
+- The liveness `/health` route is exempt for orchestrator checks; the UI, API, docs and static routes are gated.
+- This is one shared credential for a local/demo deployment, not multi-user authentication, account management, role-based authorization or a replacement for TLS at a public edge.
+- The Docker smoke test generates ephemeral credentials and verifies both unauthenticated health and authenticated document/report requests.

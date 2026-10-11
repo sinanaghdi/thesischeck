@@ -25,6 +25,9 @@ def test_compose_profile_has_local_only_and_constrained_runtime() -> None:
     assert edge["entrypoint"] == ["nginx", "-g", "daemon off;"]
     assert any(item.startswith("/run:") and "uid=101" in item for item in edge["tmpfs"])
     assert any(item.startswith("/var/cache/nginx:") and "uid=101" in item for item in edge["tmpfs"])
+    assert web["environment"]["BASIC_AUTH_ENABLED"] == "true"
+    assert web["environment"]["BASIC_AUTH_USERNAME"] == "${THESISCHECK_BASIC_AUTH_USERNAME:?Set THESISCHECK_BASIC_AUTH_USERNAME in .env}"
+    assert web["environment"]["BASIC_AUTH_PASSWORD"] == "${THESISCHECK_BASIC_AUTH_PASSWORD:?Set THESISCHECK_BASIC_AUTH_PASSWORD in .env}"
     assert web["read_only"] is True
     assert web["init"] is True
     assert web["cap_drop"] == ["ALL"]
@@ -53,3 +56,5 @@ def test_example_environment_defaults_debug_off_and_limits_are_documented() -> N
     assert "LLM_MODE=off" in environment
     assert "INSPECTION_RATE_LIMIT=20" in environment
     assert "PARSER_WORKER_CONCURRENCY=2" in environment
+    assert "THESISCHECK_BASIC_AUTH_USERNAME=thesischeck-demo" in environment
+    assert "THESISCHECK_BASIC_AUTH_PASSWORD=" in environment
