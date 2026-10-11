@@ -2,7 +2,7 @@
 
 ThesisCheck is a draft-review and format-control assistant for graduate theses. It helps identify potential formatting, citation, terminology, abstract and structure issues before supervisor review. It does not generate thesis sections for submission, fabricate references, or silently rewrite source text.
 
-> **Current status: Phase 7 slice 7 — loopback-only Nginx edge with request limits and streamed proxying.** The app accepts DOCX/PDF for in-memory inspection, runs deterministic offline checks, produces a coverage-aware provisional score, and exports JSON and self-contained RTL HTML. PDF export uses optional Playwright/Chromium.
+> **Current status: Phase 8 complete; Phase 9 adds a manually triggered parser benchmark workflow.** The app accepts DOCX/PDF for in-memory inspection, runs deterministic offline checks, produces a coverage-aware provisional score, and exports JSON and self-contained RTL HTML. PDF export uses optional Playwright/Chromium.
 
 ## Implemented
 
@@ -22,6 +22,7 @@ ThesisCheck is a draft-review and format-control assistant for graduate theses. 
 - Supervised parser subprocess with a configurable wall-clock deadline, bounded concurrent worker slots, a minimal environment, and optional POSIX CPU/address-space/file-descriptor limits.
 - Streaming raw-body cap on upload endpoints: max configured file size plus 1 MiB multipart overhead; oversized declared or streamed requests are rejected with HTTP 413 before document parsing.
 - Synthetic DOCX fixtures generated during tests and GitHub Actions for pytest + Ruff.
+- Manually triggered GitHub Actions benchmark for supervised parsing of synthetic DOCX files, with a JSON artifact and run summary.
 - Hardened Docker profile with distinct web and parser-service containers on an internal network. Both run non-root with read-only root filesystems and resource limits; parser has no published host port or outbound network route.
 
 ## Run locally
@@ -67,6 +68,26 @@ The Nginx edge enforces a request-body cap, per-source-IP rate limiting and conc
 The web app sends raw document bytes to `http://parser:8001/internal/parse` with the shared token. The parser service checks that token using a constant-time comparison, applies its own raw-body limit, and invokes the supervised parsing subprocess. It receives no database, JWT or LLM configuration and does not persist inputs or normalized results.
 
 These are layered defenses, not an absolute sandbox: the containers share the host kernel, and the parser can contact its web peer on the private network. The configured Nginx shared zone rate limits requests at this single edge instance; horizontally scaled edge instances would need coordinated/shared enforcement. Per-user accounts and role-based authorization, a production trusted-edge setup, retention policy if persistence is introduced, and target-environment security/load acceptance remain open.
+
+## Repeatable parser benchmark (Phase 9)
+
+The `benchmark` GitHub Actions workflow runs only when manually triggered; it is separate from regular tests so noisy timing does not make every pull request flaky.
+
+1. Open **Actions → benchmark → Run workflow**.
+2. Keep the defaults for a 100-logical-page synthetic DOCX, or change the page count, paragraphs per page, and non-binding parse-time threshold.
+3. Open the workflow run summary for the metrics, and download the `thesischeck-benchmark-results` artifact for the raw JSON result.
+
+The report includes generated upload size, fixture-generation time, supervised parse time, extracted element count, parser diagnostics and whether the configured threshold was met. The document is generated in memory and contains fictional text only.
+
+**Important:** this workflow measures a GitHub-hosted runner, not your intended deployment machine. Shared-runner timing is noisy and is useful as a repeatable signal, not as a production performance guarantee or a substitute for running the same benchmark on the actual target host.
+
+Run the same synthetic benchmark locally from the repository root:
+
+```bash
+python -m scripts.benchmark_100_page_docx --pages 100 --paragraphs-per-page 6 --max-seconds 30
+```
+
+The command prints a JSON object to standard output and exits non-zero if parsing exceeds the selected threshold. Adjust the threshold to match the environment; record the environment and result when carrying out target-host acceptance.
 
 ## PDF export (optional)
 
