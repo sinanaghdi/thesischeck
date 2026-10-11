@@ -41,10 +41,13 @@ jobs:
 
           path = Path(".env")
           content = path.read_text(encoding="utf-8")
+          parser_token = secrets.token_urlsafe(48)
+          auth_username = "thesischeck-ci"
+          auth_password = secrets.token_urlsafe(32)
           replacements = {
-              "PARSER_SERVICE_TOKEN=": f"PARSER_SERVICE_TOKEN={secrets.token_urlsafe(48)}",
-              "THESISCHECK_BASIC_AUTH_USERNAME=thesischeck-demo": "THESISCHECK_BASIC_AUTH_USERNAME=thesischeck-ci",
-              "THESISCHECK_BASIC_AUTH_PASSWORD=": f"THESISCHECK_BASIC_AUTH_PASSWORD={secrets.token_urlsafe(32)}",
+              "PARSER_SERVICE_TOKEN=": f"PARSER_SERVICE_TOKEN={parser_token}",
+              "THESISCHECK_BASIC_AUTH_USERNAME=thesischeck-demo": f"THESISCHECK_BASIC_AUTH_USERNAME={auth_username}",
+              "THESISCHECK_BASIC_AUTH_PASSWORD=": f"THESISCHECK_BASIC_AUTH_PASSWORD={auth_password}",
           }
           for before, after in replacements.items():
               if content.count(before) != 1:
@@ -52,10 +55,8 @@ jobs:
               content = content.replace(before, after)
           path.write_text(content, encoding="utf-8")
           with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
-              env_file.write("THESISCHECK_BASIC_AUTH_USERNAME=thesischeck-ci\n")
-              env_file.write(
-                  f"THESISCHECK_BASIC_AUTH_PASSWORD={replacements['THESISCHECK_BASIC_AUTH_PASSWORD'].split('=', 1)[1]}\n"
-              )
+              env_file.write(f"THESISCHECK_BASIC_AUTH_USERNAME={auth_username}\n")
+              env_file.write(f"THESISCHECK_BASIC_AUTH_PASSWORD={auth_password}\n")
           PY
       - name: Validate Compose configuration
         run: docker compose config --quiet
